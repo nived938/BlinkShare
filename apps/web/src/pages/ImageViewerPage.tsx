@@ -25,7 +25,8 @@ export const ImageViewerPage: React.FC = () => {
   const { shareId } = useParams<{ shareId: string }>();
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'not_found' | 'error' | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isExpired, setIsExpired] = useState(false);
   const [metadata, setMetadata] = useState<ShareMetadata | null>(null);
 
@@ -43,21 +44,29 @@ export const ImageViewerPage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const fetchMetadata = async () => {
-    if (!shareId) return;
+    if (!shareId || !shareId.trim()) {
+      setLoading(false);
+      setErrorType('not_found');
+      return;
+    }
     setLoading(true);
-    setError(null);
+    setErrorType(null);
+    setErrorMessage(null);
     try {
-      const res = await api.getShare(shareId);
+      const res = await api.getShare(shareId.trim());
       setMetadata(res.metadata);
       setIsPasswordRequired(Boolean(res.isPasswordRequired));
-      if (res.metadata.isExpired) {
+      if (res.metadata?.isExpired) {
         setIsExpired(true);
       }
     } catch (err: any) {
       if (err.status === 410) {
         setIsExpired(true);
+      } else if (err.status === 404) {
+        setErrorType('not_found');
       } else {
-        setError(err.message || 'Image not found or expired');
+        setErrorType('error');
+        setErrorMessage(err.message || 'Unable to load this share. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -117,7 +126,7 @@ export const ImageViewerPage: React.FC = () => {
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-3 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
-          <p className="text-xs font-semibold text-slate-500">Retrieving 5-minute image share...</p>
+          <p className="text-sm font-medium text-slate-600">Loading shared image...</p>
         </div>
       </div>
     );
@@ -127,17 +136,45 @@ export const ImageViewerPage: React.FC = () => {
     return <ExpiredNotice />;
   }
 
-  if (error || !metadata) {
+  if (errorType === 'error') {
     return (
-      <div className="max-w-md mx-auto my-16 p-8 text-center bg-white rounded-3xl border border-slate-200">
+      <div className="max-w-md mx-auto my-16 p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
         <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h3 className="font-bold text-slate-900 mb-1">Image Unavailable</h3>
-        <p className="text-xs text-slate-500 mb-6">{error || 'This image has expired or was removed.'}</p>
+        <h3 className="text-xl font-bold text-slate-900 mb-2">Unable to load this share. Please try again.</h3>
+        <p className="text-xs text-slate-500 mb-6">{errorMessage || 'A network or server error occurred while retrieving this share.'}</p>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => fetchMetadata()}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Try Again</span>
+          </button>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Return to Homepage</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorType === 'not_found' || !metadata) {
+    return (
+      <div className="max-w-md mx-auto my-16 p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <h3 className="text-xl font-bold text-slate-900 mb-2">This share could not be found.</h3>
+        <p className="text-xs text-slate-500 mb-6">The requested link does not exist, was mistyped, or has already been removed.</p>
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Return to Homepage</span>

@@ -7,7 +7,7 @@
     "dev:web": "pnpm --filter @blinkshare/web dev",
     "dev:api": "pnpm --filter @blinkshare/api dev",
     "build": "pnpm --filter @blinkshare/shared build && pnpm --filter @blinkshare/web build && pnpm --filter @blinkshare/api build",
-    "test": "pnpm --filter @blinkshare/api test",
+    "test": "pnpm --filter @blinkshare/api test && pnpm --filter @blinkshare/web test",
     "test:web": "pnpm --filter @blinkshare/web test"
   },
   "devDependencies": {

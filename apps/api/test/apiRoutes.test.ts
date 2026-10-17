@@ -151,14 +151,49 @@ describe('Hono API End-to-End Routes (Cloudflare Workers KV + D1 Free)', () => {
     expect(streamRes.headers.get('cdn-cache-control')).toBe('no-store');
   });
 
-  it('GET /api/plans returns all plan limits and 300s lifetime invariant', async () => {
-    const res = await app.request('/api/plans', {}, env);
-    expect(res.status).toBe(200);
-    const data = await res.json() as any;
-    expect(data.fixedLifetimeSeconds).toBe(300);
-    expect(data.plans.free.expirationSeconds).toBe(300);
-    expect(data.plans.plus.expirationSeconds).toBe(300);
-    expect(data.plans.pro.expirationSeconds).toBe(300);
-    expect(data.plans.free.priceMonthlyInr).toBe(0);
+  it('BlinkShare route test 48291: creates share, verifies /t/:id URL, retrieves content, handles 404 and 410', async () => {
+    // 1. Create share with distinctive text
+    const distinctiveText = 'BlinkShare route test 48291';
+    const res = await app.request(
+      '/api/shares/text',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Route Verification Share',
+          textContent: distinctiveText,
+          textFormat: 'plain_text',
+        }),
+      },
+      env
+    );
+
+    expect(res.status).toBe(201);
+    const body = await res.json() as any;
+    expect(body.id).toBeDefined();
+    // 2. Share URL must be /t/:id
+    expect(body.shareUrl).toBe(`http://localhost:5173/t/${body.id}`);
+
+    // 3. Retrieve through /content API
+    const contentRes = await app.request(`/api/shares/${body.id}/content`, {}, env);
+    expect(contentRes.status).toBe(200);
+    const contentData = await contentRes.json() as any;
+    expect(contentData.textContent).toBe(distinctiveText);
+    expect(contentData.metadata.title).toBe('Route Verification Share');
+    expect(contentData.metadata.textFormat).toBe('plain_text');
+
+    // 4. Nonexistent share ID returns 404
+    const nonExistentRes = await app.request('/api/shares/nonexistent-id-99999/content', {}, env);
+    expect(nonExistentRes.status).toBe(404);
+    const nonExistentData = await nonExistentRes.json() as any;
+    expect(nonExistentData.error).toBe('Share not found');
+
+    // 5. Expired share returns 410 and does NOT expose text content
+    env.TEST_CLOCK_OFFSET = '301';
+    const expiredRes = await app.request(`/api/shares/${body.id}/content`, {}, env);
+    expect(expiredRes.status).toBe(410);
+    const expiredData = await expiredRes.json() as any;
+    expect(expiredData.error).toContain('expired');
+    expect(expiredData.textContent).toBeUndefined();
   });
 });

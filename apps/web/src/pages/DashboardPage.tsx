@@ -200,7 +200,7 @@ export const DashboardPage: React.FC = () => {
         ) : (
           <div className="divide-y divide-slate-100">
             {shares.map((item) => {
-              const viewUrl = item.contentType === 'image' ? `/i/${item.id}` : `/s/${item.id}`;
+              const viewUrl = item.contentType === 'image' ? `/i/${item.id}` : `/t/${item.id}`;
               return (
                 <div key={item.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">

@@ -55,6 +55,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     (err as any).status = res.status;
     (err as any).details = data?.details;
     (err as any).retryAfter = data?.retryAfter;
+    (err as any).isPasswordRequired = data?.isPasswordRequired;
+    (err as any).metadata = data?.metadata;
     throw err;
   }
 

@@ -19,7 +19,9 @@ export const ReportAbusePage: React.FC = () => {
 
     // Extract ID if full URL pasted
     let cleanedId = shareId.trim();
-    if (cleanedId.includes('/s/')) {
+    if (cleanedId.includes('/t/')) {
+      cleanedId = cleanedId.split('/t/')[1]?.split('?')[0] || cleanedId;
+    } else if (cleanedId.includes('/s/')) {
       cleanedId = cleanedId.split('/s/')[1]?.split('?')[0] || cleanedId;
     } else if (cleanedId.includes('/i/')) {
       cleanedId = cleanedId.split('/i/')[1]?.split('?')[0] || cleanedId;
@@ -79,7 +81,7 @@ export const ReportAbusePage: React.FC = () => {
                 required
                 value={shareId}
                 onChange={(e) => setShareId(e.target.value)}
-                placeholder="e.g. 7kF9x0Lm or https://blinkshare.io/s/7kF9x0Lm"
+                placeholder="e.g. 7kF9x0Lm or https://blinkshare.io/t/7kF9x0Lm"
                 className="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono"
               />
             </div>

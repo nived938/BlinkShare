@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -17,6 +17,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { BillingDashboardPage } from './pages/BillingDashboardPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export const App: React.FC = () => {
   return (
@@ -27,8 +28,12 @@ export const App: React.FC = () => {
           <div className="flex-1">
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/t/:shareId" element={<TextViewerPage />} />
+              <Route path="/t" element={<TextViewerPage />} />
               <Route path="/s/:shareId" element={<TextViewerPage />} />
+              <Route path="/s" element={<TextViewerPage />} />
               <Route path="/i/:shareId" element={<ImageViewerPage />} />
+              <Route path="/i" element={<ImageViewerPage />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/features" element={<FeaturesPage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
@@ -39,7 +44,7 @@ export const App: React.FC = () => {
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/dashboard/billing" element={<BillingDashboardPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </div>
           <Footer />

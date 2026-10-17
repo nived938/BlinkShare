@@ -1,0 +1,16 @@
+{
+  "name": "blinkshare-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:web": "pnpm --filter @blinkshare/web dev",
+    "dev:api": "pnpm --filter @blinkshare/api dev",
+    "build": "pnpm --filter @blinkshare/shared build && pnpm --filter @blinkshare/web build && pnpm --filter @blinkshare/api build",
+    "test": "pnpm --filter @blinkshare/api test",
+    "test:web": "pnpm --filter @blinkshare/web test"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

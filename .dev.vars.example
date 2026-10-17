@@ -1,0 +1,6 @@
+# Local development secrets for Cloudflare Wrangler
+RATE_LIMIT_SECRET=dev-rate-limit-secret-key-32chars!
+SESSION_SECRET=dev-session-secret-key-32chars!!
+BILLING_PROVIDER=none
+APP_URL=http://localhost:5173
+APP_NAME=BlinkShare

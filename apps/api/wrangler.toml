@@ -1,0 +1,24 @@
+name = "blinkshare-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+APP_NAME = "BlinkShare"
+APP_URL = "http://localhost:5173"
+BILLING_PROVIDER = "none"
+RATE_LIMIT_SECRET = "dev-rate-limit-secret-key-32chars!"
+SESSION_SECRET = "dev-session-secret-key-32chars!!"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "blinkshare-db"
+database_id = "blinkshare-d1-id"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "blinkshare-images"
+
+[triggers]
+crons = ["* * * * *"]

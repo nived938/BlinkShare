@@ -4,3 +4,9 @@ SESSION_SECRET=dev-session-secret-key-32chars!!
 BILLING_PROVIDER=none
 APP_URL=http://localhost:5173
 APP_NAME=BlinkShare
+
+# Image storage mode:
+# - 'local': Wrangler local simulated R2 storage (Miniflare) - NO billing required
+# - 'r2': Real Cloudflare R2 bucket binding (requires Cloudflare R2 billing activated)
+# - 'disabled': Gracefully disable image sharing while keeping text sharing 100% operational
+IMAGE_STORAGE_MODE=local

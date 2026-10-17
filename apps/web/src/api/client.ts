@@ -189,4 +189,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ plan }),
     }),
+
+  // Health & Storage Info
+  getStorageHealth: () =>
+    request<{ status: string; storageMode: 'local' | 'r2' | 'disabled'; storageAvailable: boolean; message: string }>('/health/storage'),
 };

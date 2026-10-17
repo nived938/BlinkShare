@@ -2,7 +2,8 @@ import { PlanType } from '@blinkshare/shared';
 
 export interface Env {
   DB: D1Database;
-  IMAGES: R2Bucket;
+  IMAGES?: R2Bucket;
+  IMAGE_STORAGE_MODE?: 'local' | 'r2' | 'disabled';
   APP_NAME?: string;
   APP_URL?: string;
   API_URL?: string;

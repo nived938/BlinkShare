@@ -2,6 +2,10 @@
 
 Follow these steps to deploy BlinkShare to production on your Cloudflare account.
 
+> **Note on Cloudflare R2 Billing**: You do NOT need active Cloudflare R2 billing to develop or test BlinkShare locally. Local development uses Wrangler's built-in Miniflare R2 simulation (`IMAGE_STORAGE_MODE=local`). If deploying to Cloudflare before activating R2 billing, set `IMAGE_STORAGE_MODE=disabled` or omit R2 bucket bindings; text sharing, user accounts, and pricing remain 100% operational.
+
+---
+
 ## 1. Cloudflare Login
 
 Log in to your Cloudflare account via Wrangler:
@@ -39,15 +43,48 @@ wrangler d1 execute blinkshare-db --remote --file=apps/api/migrations/0001_initi
 
 ---
 
-## 3. Create Cloudflare R2 Bucket
+## 3. Cloudflare R2 Setup (When Billing Is Activated)
 
-Create the private image bucket:
+### Pre-billing State:
+If Cloudflare R2 billing is not enabled yet:
+- In production, set `IMAGE_STORAGE_MODE = "disabled"` in your worker configuration.
+- Text sharing via D1 works completely without R2.
+- Any image upload requests gracefully return HTTP 503 explaining that storage is being configured, without breaking the site.
 
-```bash
-wrangler r2 bucket create blinkshare-images
-```
+### Activating Real R2 Storage:
+Once you enable R2 billing in the Cloudflare Dashboard:
 
-Verify that the bucket is private (public URL access disabled). All image bytes must only be accessed through the Worker API.
+1. **Enable R2 in Dashboard**:
+   - Go to [Cloudflare Dashboard](https://dash.cloudflare.com) -> **R2 Object Storage**.
+   - If prompted, activate R2 billing (Cloudflare provides a generous free tier of 10 GB/month storage and millions of operations).
+
+2. **Create the Private Bucket**:
+   - In Dashboard or CLI:
+   ```bash
+   wrangler r2 bucket create blinkshare-images
+   ```
+   - **Crucial**: Keep the bucket strictly private. Do NOT enable public bucket access. All image bytes must be accessed exclusively through the 5-minute authenticated Worker API.
+
+3. **Update Production Configuration**:
+   - In `apps/api/wrangler.toml`:
+   ```toml
+   [vars]
+   IMAGE_STORAGE_MODE = "r2"
+
+   [[r2_buckets]]
+   binding = "IMAGES"
+   bucket_name = "blinkshare-images"
+   ```
+
+4. **Redeploy the API Worker**:
+   ```bash
+   pnpm --filter @blinkshare/api deploy
+   ```
+
+5. **Verify Setup**:
+   - Check `https://<your-worker-domain>/api/health/storage` — it will return:
+     `{ "status": "ok", "storageMode": "r2", "storageAvailable": true }`.
+   - Test image upload, preview, and verify automatic 5-minute cleanup.
 
 ---
 

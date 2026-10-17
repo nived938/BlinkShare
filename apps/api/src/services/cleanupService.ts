@@ -2,6 +2,7 @@ import { Env } from '../types/env';
 import { ShareRepository } from '../repositories/shareRepository';
 import { getCurrentTimestamp } from '../lib/clock';
 import { generateSecureId } from '../lib/crypto';
+import { ImageStorageService } from './imageStorageService';
 
 export interface CleanupResult {
   expiredSharesProcessed: number;
@@ -14,9 +15,11 @@ export interface CleanupResult {
 
 export class CleanupService {
   private repo: ShareRepository;
+  private storage: ImageStorageService;
 
   constructor(private env: Env) {
     this.repo = new ShareRepository(env.DB);
+    this.storage = new ImageStorageService(env);
   }
 
   /**
@@ -42,7 +45,7 @@ export class CleanupService {
       // If it's an image, delete from R2 first
       if (share.r2_object_key) {
         try {
-          await this.env.IMAGES.delete(share.r2_object_key);
+          await this.storage.deleteImage(share.r2_object_key);
           result.r2ImagesDeleted++;
         } catch (err: any) {
           // If R2 deletion fails, enqueue retry and DO NOT purge D1 row yet!
@@ -78,7 +81,7 @@ export class CleanupService {
       if (session.is_finalized === 0 && session.r2_key) {
         // Abandoned upload: delete incomplete object from R2
         try {
-          await this.env.IMAGES.delete(session.r2_key);
+          await this.storage.deleteImage(session.r2_key);
         } catch {}
       }
       await this.repo.deleteUploadSession(session.token);
@@ -92,7 +95,7 @@ export class CleanupService {
     for (const retry of retries) {
       try {
         if (retry.resource_type === 'r2_image') {
-          await this.env.IMAGES.delete(retry.resource_identifier);
+          await this.storage.deleteImage(retry.resource_identifier);
         } else if (retry.resource_type === 'd1_share') {
           await this.repo.purgeShare(retry.resource_identifier);
         }

@@ -47,9 +47,36 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // Storage configuration health
+  const [storageInfo, setStorageInfo] = useState<{
+    storageMode: 'local' | 'r2' | 'disabled';
+    storageAvailable: boolean;
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    api.getStorageHealth()
+      .then((data) => {
+        setStorageInfo({
+          storageMode: data.storageMode,
+          storageAvailable: data.storageAvailable,
+          message: data.message,
+        });
+      })
+      .catch(() => {
+        // Fallback: assume available in local dev
+        setStorageInfo({
+          storageMode: 'local',
+          storageAvailable: true,
+          message: 'Local R2 simulation active.',
+        });
+      });
+  }, []);
+
   // Clipboard paste listener to allow pasting screenshots directly
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
+      if (storageInfo && !storageInfo.storageAvailable) return;
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -66,7 +93,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [planLimits.maxImageBytes]);
+  }, [planLimits.maxImageBytes, storageInfo]);
 
   const handleFileSelect = (file: File) => {
     setError(null);
@@ -176,6 +203,33 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
 
   return (
     <div className="space-y-6">
+      {/* Storage Mode Notice Banners */}
+      {storageInfo && !storageInfo.storageAvailable && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 flex items-start gap-3 text-amber-900 shadow-2xs">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs space-y-1">
+            <p className="font-semibold text-amber-900">Cloudflare R2 Storage Not Yet Configured</p>
+            <p className="text-amber-800 leading-relaxed">
+              Image sharing is currently disabled in this deployment because an active Cloudflare R2 bucket is not configured.
+              <strong> Text sharing remains 100% functional.</strong>
+            </p>
+            <p className="text-amber-700 text-[11px]">
+              For local development without Cloudflare billing, ensure <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">IMAGE_STORAGE_MODE=local</code> is set in your <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">wrangler.toml</code> or <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">.dev.vars</code> to use Miniflare's local simulated storage.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {storageInfo?.storageMode === 'local' && (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-violet-50/80 border border-violet-200 text-violet-900 text-xs shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse flex-shrink-0"></span>
+          <div>
+            <span className="font-semibold text-violet-800">Local R2 Simulation Active: </span>
+            <span className="text-violet-700">Images are stored in local development storage and expire after 5 minutes (no Cloudflare R2 billing required).</span>
+          </div>
+        </div>
+      )}
+
       {/* Hidden File Input */}
       <input
         type="file"
@@ -186,20 +240,26 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
           }
         }}
         accept={ALLOWED_IMAGE_MIME_TYPES.join(',')}
+        disabled={storageInfo?.storageAvailable === false}
         className="hidden"
       />
 
       {/* Main Drag & Drop / Preview Surface */}
       {!selectedFile ? (
         <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
+          onDrop={storageInfo?.storageAvailable === false ? (e) => e.preventDefault() : handleDrop}
+          onDragOver={storageInfo?.storageAvailable === false ? (e) => e.preventDefault() : handleDragOver}
           onDragLeave={handleDragLeave}
-          onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all ${
-            isDragging
-              ? 'border-brand-500 bg-brand-50/70 scale-[1.01]'
-              : 'border-slate-300 hover:border-brand-400 bg-slate-50/50 hover:bg-slate-50'
+          onClick={() => {
+            if (storageInfo?.storageAvailable === false) return;
+            fileInputRef.current?.click();
+          }}
+          className={`border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center transition-all ${
+            storageInfo?.storageAvailable === false
+              ? 'border-slate-200 bg-slate-50/60 opacity-60 cursor-not-allowed'
+              : isDragging
+              ? 'border-brand-500 bg-brand-50/70 scale-[1.01] cursor-pointer'
+              : 'border-slate-300 hover:border-brand-400 bg-slate-50/50 hover:bg-slate-50 cursor-pointer'
           }`}
         >
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-brand-100 to-indigo-100 flex items-center justify-center text-brand-600 shadow-sm border border-brand-200/50">
@@ -417,7 +477,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
         <button
           type="button"
           onClick={handleUploadAndShare}
-          disabled={!selectedFile || isUploading}
+          disabled={!selectedFile || isUploading || storageInfo?.storageAvailable === false}
           className="w-full py-3.5 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-brand-600 via-indigo-600 to-electric-cyan hover:from-brand-700 hover:via-indigo-700 hover:to-electric-blue shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 text-base"
         >
           {isUploading ? (

@@ -20,12 +20,15 @@ import {
   verifyPassword,
 } from '../lib/crypto';
 import { getCurrentTimestamp } from '../lib/clock';
+import { ImageStorageService } from './imageStorageService';
 
 export class ShareService {
   private repo: ShareRepository;
+  private storage: ImageStorageService;
 
   constructor(private env: Env) {
     this.repo = new ShareRepository(env.DB);
+    this.storage = new ImageStorageService(env);
   }
 
   async createTextShare(
@@ -214,6 +217,14 @@ export class ShareService {
     plan: PlanType,
     ownerId?: string
   ): Promise<InitImageUploadResult> {
+    if (!this.storage.isAvailable()) {
+      const err = new Error(
+        'Image storage is currently unavailable. Text sharing remains operational. To enable image sharing, configure Cloudflare R2 or run Wrangler with local R2 simulation.'
+      );
+      (err as any).status = 503;
+      throw err;
+    }
+
     const limits = PLANS[plan];
 
     if (payload.fileSize > limits.maxImageBytes) {
@@ -298,12 +309,8 @@ export class ShareService {
       throw err;
     }
 
-    // Write directly into private R2
-    await this.env.IMAGES.put(session.r2_key, stream, {
-      httpMetadata: {
-        contentType: session.file_mime_type,
-      },
-    });
+    // Write directly into private storage (local simulation or production R2)
+    await this.storage.uploadImage(session.r2_key, stream, session.file_mime_type);
   }
 
   async finalizeImageUpload(uploadToken: string): Promise<FinalizeImageUploadResult> {
@@ -316,9 +323,9 @@ export class ShareService {
       throw err;
     }
 
-    // Verify object exists in R2
-    const obj = await this.env.IMAGES.head(session.r2_key);
-    if (!obj) {
+    // Verify object exists in storage
+    const exists = await this.storage.hasImage(session.r2_key);
+    if (!exists) {
       const err = new Error('No uploaded file found in storage');
       (err as any).status = 400;
       throw err;
@@ -394,7 +401,7 @@ export class ShareService {
     if (now >= share.expires_at || share.is_deleted === 1) {
       // Lazy cleanup
       if (share.r2_object_key) {
-        this.env.IMAGES.delete(share.r2_object_key).catch(() => {});
+        this.storage.deleteImage(share.r2_object_key).catch(() => {});
       }
       this.repo.purgeShare(id).catch(() => {});
       const err = new Error('This share has expired');
@@ -428,7 +435,7 @@ export class ShareService {
       throw err;
     }
 
-    const obj = await this.env.IMAGES.get(share.r2_object_key);
+    const obj = await this.storage.getImage(share.r2_object_key);
     if (!obj) {
       const err = new Error('Image object not found');
       (err as any).status = 404;
@@ -447,10 +454,10 @@ export class ShareService {
     await this.repo.incrementViewCount(id);
 
     return {
-      stream: obj.body,
-      contentType: share.file_mime_type || 'application/octet-stream',
+      stream: obj.stream,
+      contentType: share.file_mime_type || obj.contentType,
       filename: share.original_filename || 'image',
-      fileSize: share.file_size || 0,
+      fileSize: share.file_size || obj.size,
       allowDownload: share.allow_download === 1,
     };
   }
@@ -485,7 +492,7 @@ export class ShareService {
     // Delete R2 object if image
     if (share.r2_object_key) {
       try {
-        await this.env.IMAGES.delete(share.r2_object_key);
+        await this.storage.deleteImage(share.r2_object_key);
       } catch (err: any) {
         // Enqueue retry
         await this.repo.enqueueRetry(

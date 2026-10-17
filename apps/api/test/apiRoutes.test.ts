@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 import { MockD1Database } from './mockD1';
-import { MockR2Bucket } from './mockR2';
+import { MockKVNamespace } from './mockKV';
 import { Env, AppVariables } from '../src/types/env';
 import { sharesRouter } from '../src/routes/shares';
 import { uploadsRouter } from '../src/routes/uploads';
@@ -10,22 +10,21 @@ import { healthRouter } from '../src/routes/health';
 import { authMiddleware } from '../src/middleware/auth';
 import { securityHeadersMiddleware } from '../src/middleware/securityHeaders';
 
-describe('Hono API End-to-End Routes', () => {
+describe('Hono API End-to-End Routes (Cloudflare Workers KV + D1 Free)', () => {
   let db: MockD1Database;
-  let r2: MockR2Bucket;
+  let kv: MockKVNamespace;
   let env: Env;
   let app: Hono<{ Bindings: Env; Variables: AppVariables }>;
 
   beforeEach(() => {
     db = new MockD1Database();
-    r2 = new MockR2Bucket();
+    kv = new MockKVNamespace();
     env = {
       DB: db as unknown as D1Database,
-      IMAGES: r2 as unknown as R2Bucket,
+      IMAGE_STORE: kv as unknown as KVNamespace,
       APP_URL: 'http://localhost:5173',
       RATE_LIMIT_SECRET: 'test-rate-limit-secret-32chars!!',
       SESSION_SECRET: 'test-session-secret-32chars!!',
-      BILLING_PROVIDER: 'none',
     };
 
     app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
@@ -97,7 +96,7 @@ describe('Hono API End-to-End Routes', () => {
     expect(checkAfter.status).toBe(404);
   });
 
-  it('Image upload flow: init -> upload binary -> finalize -> stream image', async () => {
+  it('Image upload flow: init -> upload binary -> finalize -> stream image from Workers KV', async () => {
     // 1. Init upload
     const initRes = await app.request(
       '/api/uploads/init',
@@ -160,5 +159,6 @@ describe('Hono API End-to-End Routes', () => {
     expect(data.plans.free.expirationSeconds).toBe(300);
     expect(data.plans.plus.expirationSeconds).toBe(300);
     expect(data.plans.pro.expirationSeconds).toBe(300);
+    expect(data.plans.free.priceMonthlyInr).toBe(0);
   });
 });

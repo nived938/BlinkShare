@@ -49,7 +49,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
 
   // Storage configuration health
   const [storageInfo, setStorageInfo] = useState<{
-    storageMode: 'local' | 'r2' | 'disabled';
+    storageMode: string;
     storageAvailable: boolean;
     message: string;
   } | null>(null);
@@ -66,9 +66,9 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
       .catch(() => {
         // Fallback: assume available in local dev
         setStorageInfo({
-          storageMode: 'local',
+          storageMode: 'kv',
           storageAvailable: true,
-          message: 'Local R2 simulation active.',
+          message: 'Cloudflare Workers KV storage active.',
         });
       });
   }, []);
@@ -208,24 +208,21 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
         <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 flex items-start gap-3 text-amber-900 shadow-2xs">
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
-            <p className="font-semibold text-amber-900">Cloudflare R2 Storage Not Yet Configured</p>
+            <p className="font-semibold text-amber-900">Workers KV Binding Not Detected</p>
             <p className="text-amber-800 leading-relaxed">
-              Image sharing is currently disabled in this deployment because an active Cloudflare R2 bucket is not configured.
+              Cloudflare Workers KV (<code className="bg-amber-100 px-1 py-0.5 rounded font-mono">IMAGE_STORE</code>) is not bound.
               <strong> Text sharing remains 100% functional.</strong>
-            </p>
-            <p className="text-amber-700 text-[11px]">
-              For local development without Cloudflare billing, ensure <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">IMAGE_STORAGE_MODE=local</code> is set in your <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">wrangler.toml</code> or <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">.dev.vars</code> to use Miniflare's local simulated storage.
             </p>
           </div>
         </div>
       )}
 
-      {storageInfo?.storageMode === 'local' && (
-        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-violet-50/80 border border-violet-200 text-violet-900 text-xs shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse flex-shrink-0"></span>
+      {storageInfo?.storageAvailable && (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
           <div>
-            <span className="font-semibold text-violet-800">Local R2 Simulation Active: </span>
-            <span className="text-violet-700">Images are stored in local development storage and expire after 5 minutes (no Cloudflare R2 billing required).</span>
+            <span className="font-semibold text-emerald-800">100% Free Edge Storage Active: </span>
+            <span className="text-emerald-700">Images stored in Cloudflare Workers KV (up to 5 MB per image, deleted after 5 min). Zero billing required.</span>
           </div>
         </div>
       )}
@@ -379,19 +376,16 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
             <Lock className="w-3.5 h-3.5 text-brand-600" />
             <span>Password Protection</span>
-            {!planLimits.passwordProtection && (
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-1 py-0.2 rounded font-normal">
-                Plus/Pro
-              </span>
-            )}
+            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+              Free
+            </span>
           </label>
           <input
             type="password"
-            disabled={!planLimits.passwordProtection}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={planLimits.passwordProtection ? 'Set password' : 'Plus required'}
-            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+            placeholder="Set optional password"
+            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>
 
@@ -400,19 +394,16 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
             <Flame className="w-3.5 h-3.5 text-rose-500" />
             <span>Burn on View</span>
-            {!planLimits.burnAfterFirstView && (
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-1 py-0.2 rounded font-normal">
-                Plus/Pro
-              </span>
-            )}
+            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+              Free
+            </span>
           </label>
           <label className="flex items-center gap-2 mt-2 cursor-pointer">
             <input
               type="checkbox"
-              disabled={!planLimits.burnAfterFirstView}
               checked={burnAfterRead}
               onChange={(e) => setBurnAfterRead(e.target.checked)}
-              className="rounded text-brand-600 focus:ring-brand-500 disabled:opacity-50"
+              className="rounded text-brand-600 focus:ring-brand-500"
             />
             <span className="text-xs text-slate-600">Delete after 1st view</span>
           </label>
@@ -423,19 +414,16 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
             <Download className="w-3.5 h-3.5 text-indigo-600" />
             <span>Allow Download</span>
-            {!planLimits.downloadRestrictionOption && (
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-1 py-0.2 rounded font-normal">
-                Plus/Pro
-              </span>
-            )}
+            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+              Free
+            </span>
           </label>
           <label className="flex items-center gap-2 mt-2 cursor-pointer">
             <input
               type="checkbox"
-              disabled={!planLimits.downloadRestrictionOption}
               checked={allowDownload}
               onChange={(e) => setAllowDownload(e.target.checked)}
-              className="rounded text-brand-600 focus:ring-brand-500 disabled:opacity-50"
+              className="rounded text-brand-600 focus:ring-brand-500"
             />
             <span className="text-xs text-slate-600">Recipients can download</span>
           </label>
@@ -446,20 +434,17 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
             <LinkIcon className="w-3.5 h-3.5 text-cyan-600" />
             <span>Custom Alias</span>
-            {!planLimits.customShareAlias && (
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-1 py-0.2 rounded font-normal">
-                Plus/Pro
-              </span>
-            )}
+            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+              Free
+            </span>
           </label>
           <input
             type="text"
-            disabled={!planLimits.customShareAlias}
             value={customAlias}
             onChange={(e) => setCustomAlias(e.target.value)}
-            placeholder={planLimits.customShareAlias ? 'my-photo' : 'Plus/Pro required'}
+            placeholder="e.g. my-photo"
             maxLength={32}
-            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono"
+            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
           />
         </div>
       </div>

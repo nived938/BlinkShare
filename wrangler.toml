@@ -6,10 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 APP_NAME = "BlinkShare"
 APP_URL = "http://localhost:5173"
-BILLING_PROVIDER = "none"
-IMAGE_STORAGE_MODE = "local"
 RATE_LIMIT_SECRET = "dev-rate-limit-secret-key-32chars!"
 SESSION_SECRET = "dev-session-secret-key-32chars!!"
+MAX_IMAGE_BYTES = "5242880"
+MAX_TEXT_BYTES = "102400"
 
 [[d1_databases]]
 binding = "DB"
@@ -17,9 +17,9 @@ database_name = "blinkshare-db"
 database_id = "63ec2816-7094-4b68-b78a-381677a257e9"
 migrations_dir = "apps/api/migrations"
 
-[[r2_buckets]]
-binding = "IMAGES"
-bucket_name = "blinkshare-images"
+[[kv_namespaces]]
+binding = "IMAGE_STORE"
+id = "blinkshare-image-store"
 
 [triggers]
 crons = ["* * * * *"]

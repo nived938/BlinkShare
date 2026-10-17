@@ -267,23 +267,21 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
       {/* Advanced Options Accordion / Controls (Password, Burn, Download, Custom Alias) */}
       <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Password Protection */}
+        {/* Password Lock */}
         <div className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl">
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
             <Lock className="w-3.5 h-3.5 text-brand-600" />
             <span>Password Lock</span>
-            {!planLimits.passwordProtection && (
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-1 py-0.2 rounded font-normal">
-                Plus/Pro
-              </span>
-            )}
+            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+              Free
+            </span>
           </label>
           <input
             type="password"
-            disabled={!planLimits.passwordProtection}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={planLimits.passwordProtection ? 'Set password' : 'Plus plan required'}
-            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+            placeholder="Set optional password"
+            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>
 
@@ -292,19 +290,16 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
             <Flame className="w-3.5 h-3.5 text-rose-500" />
             <span>Burn on View</span>
-            {!planLimits.burnAfterFirstView && (
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-1 py-0.2 rounded font-normal">
-                Plus/Pro
-              </span>
-            )}
+            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+              Free
+            </span>
           </label>
           <label className="flex items-center gap-2 mt-2 cursor-pointer">
             <input
               type="checkbox"
-              disabled={!planLimits.burnAfterFirstView}
               checked={burnAfterRead}
               onChange={(e) => setBurnAfterRead(e.target.checked)}
-              className="rounded text-brand-600 focus:ring-brand-500 disabled:opacity-50"
+              className="rounded text-brand-600 focus:ring-brand-500"
             />
             <span className="text-xs text-slate-600">Delete upon 1st view</span>
           </label>
@@ -315,19 +310,16 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
             <Download className="w-3.5 h-3.5 text-indigo-600" />
             <span>Allow Download</span>
-            {!planLimits.downloadRestrictionOption && (
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-1 py-0.2 rounded font-normal">
-                Plus/Pro
-              </span>
-            )}
+            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+              Free
+            </span>
           </label>
           <label className="flex items-center gap-2 mt-2 cursor-pointer">
             <input
               type="checkbox"
-              disabled={!planLimits.downloadRestrictionOption}
               checked={allowDownload}
               onChange={(e) => setAllowDownload(e.target.checked)}
-              className="rounded text-brand-600 focus:ring-brand-500 disabled:opacity-50"
+              className="rounded text-brand-600 focus:ring-brand-500"
             />
             <span className="text-xs text-slate-600">Enable download button</span>
           </label>
@@ -338,20 +330,17 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
             <LinkIcon className="w-3.5 h-3.5 text-cyan-600" />
             <span>Custom Alias</span>
-            {!planLimits.customShareAlias && (
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-1 py-0.2 rounded font-normal">
-                Plus/Pro
-              </span>
-            )}
+            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+              Free
+            </span>
           </label>
           <input
             type="text"
-            disabled={!planLimits.customShareAlias}
             value={customAlias}
             onChange={(e) => setCustomAlias(e.target.value)}
-            placeholder={planLimits.customShareAlias ? 'my-alias' : 'Plus/Pro required'}
+            placeholder="e.g. my-note"
             maxLength={32}
-            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono"
+            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
           />
         </div>
       </div>

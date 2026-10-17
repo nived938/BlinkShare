@@ -1,28 +1,28 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MockD1Database } from './mockD1';
-import { MockR2Bucket } from './mockR2';
+import { MockKVNamespace } from './mockKV';
 import { ShareService } from '../src/services/shareService';
 import { RateLimitService } from '../src/services/rateLimitService';
 import { Env } from '../src/types/env';
 import { detectSensitiveContent } from '@blinkshare/shared';
 
-describe('Security, Quotas & Access Controls', () => {
+describe('Security, Quotas & Access Controls (100% Free Plan)', () => {
   let db: MockD1Database;
-  let r2: MockR2Bucket;
+  let kv: MockKVNamespace;
   let env: Env;
 
   beforeEach(() => {
     db = new MockD1Database();
-    r2 = new MockR2Bucket();
+    kv = new MockKVNamespace();
     env = {
       DB: db as unknown as D1Database,
-      IMAGES: r2 as unknown as R2Bucket,
+      IMAGE_STORE: kv as unknown as KVNamespace,
       APP_URL: 'http://localhost:5173',
       RATE_LIMIT_SECRET: 'test-secret-salt-32chars!!',
     };
   });
 
-  it('enforces plan text size limits and rejects oversized content', async () => {
+  it('enforces free-tier text size limits (100 KB) and rejects oversized content', async () => {
     const shareService = new ShareService(env);
 
     // Free plan max: 100 KB
@@ -33,52 +33,40 @@ describe('Security, Quotas & Access Controls', () => {
     const oversizedFreeText = 'A'.repeat(105 * 1024); // 105 KB
     await expect(
       shareService.createTextShare({ textContent: oversizedFreeText }, 'free')
-    ).rejects.toThrow('Text content exceeds plan limit of 100 KB');
-
-    // Plus plan allows 500 KB
-    const validPlusShare = await shareService.createTextShare(
-      { textContent: oversizedFreeText },
-      'plus'
-    );
-    expect(validPlusShare.id).toBeDefined();
+    ).rejects.toThrow('Text content exceeds free tier limit of 100 KB');
   });
 
-  it('restricts password protection to Plus and Pro plans', async () => {
+  it('unlocked password protection is available for all users at zero cost', async () => {
     const shareService = new ShareService(env);
 
-    // Free plan cannot set password
-    await expect(
-      shareService.createTextShare({ textContent: 'Secret', password: 'my-password' }, 'free')
-    ).rejects.toThrow('Password protection requires a Plus or Pro plan');
-
-    // Plus plan can set password
-    const plusShare = await shareService.createTextShare(
+    // Any free user can set password
+    const freeShare = await shareService.createTextShare(
       { textContent: 'Secret content', password: 'secure-password' },
-      'plus'
+      'free'
     );
 
     // Initial retrieve without password shows password is required
-    const initialView = await shareService.getShareContent(plusShare.id);
+    const initialView = await shareService.getShareContent(freeShare.id);
     expect(initialView.isPasswordRequired).toBe(true);
     expect(initialView.textContent).toBeUndefined();
 
     // Retrieve with wrong password throws 401
     await expect(
-      shareService.getShareContent(plusShare.id, 'wrong-pass')
+      shareService.getShareContent(freeShare.id, 'wrong-pass')
     ).rejects.toThrow('Invalid password');
 
     // Retrieve with correct password unlocks content
-    const unlocked = await shareService.getShareContent(plusShare.id, 'secure-password');
+    const unlocked = await shareService.getShareContent(freeShare.id, 'secure-password');
     expect(unlocked.textContent).toBe('Secret content');
     expect(unlocked.isPasswordRequired).toBe(false);
   });
 
-  it('guarantees atomic burn-after-first-view', async () => {
+  it('guarantees atomic burn-after-first-view for all users at zero cost', async () => {
     const shareService = new ShareService(env);
 
     const share = await shareService.createTextShare(
       { textContent: 'Self-destructing token', burnAfterRead: true },
-      'plus'
+      'free'
     );
 
     // First reveal succeeds
@@ -106,7 +94,7 @@ describe('Security, Quotas & Access Controls', () => {
     await expect(shareService.getShareContent(share.id)).rejects.toThrow('Share not found');
   });
 
-  it('enforces daily share rate limits using keyed IP hashes', async () => {
+  it('enforces daily share rate limits using keyed IP hashes (10/day anonymous)', async () => {
     const rateLimit = new RateLimitService(env);
     const ip = '198.51.100.45';
 

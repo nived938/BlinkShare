@@ -27,7 +27,7 @@ uploadsRouter.post('/init', async (c) => {
     c.req.header('x-real-ip') ||
     '127.0.0.1';
 
-  const rateLimit = await rateLimitService.checkShareCreationLimit(clientIp, auth.plan, auth.userId);
+  const rateLimit = await rateLimitService.checkShareCreationLimit(clientIp, auth.plan, auth.userId, true);
   if (!rateLimit.allowed) {
     return c.json(
       {

@@ -2,10 +2,10 @@ import {
   CreateTextSharePayload,
   CreateShareResult,
   EXPIRATION_SECONDS,
+  FREE_TIER_LIMITS,
   InitImageUploadPayload,
   InitImageUploadResult,
   FinalizeImageUploadResult,
-  PLANS,
   PlanType,
   ShareContentResponse,
   ShareMetadata,
@@ -36,57 +36,37 @@ export class ShareService {
     plan: PlanType,
     ownerId?: string
   ): Promise<CreateShareResult> {
-    const limits = PLANS[plan];
+    const maxTextBytes = parseInt(this.env.MAX_TEXT_BYTES || '', 10) || FREE_TIER_LIMITS.maxTextBytes;
     const textBytes = new TextEncoder().encode(payload.textContent).length;
 
-    if (textBytes > limits.maxTextBytes) {
-      throw new Error(`Text content exceeds plan limit of ${Math.round(limits.maxTextBytes / 1024)} KB`);
+    if (textBytes > maxTextBytes) {
+      throw new Error(`Text content exceeds free tier limit of ${Math.round(maxTextBytes / 1024)} KB`);
     }
 
-    // Password protection check
+    // All features are 100% free for everyone!
     let passwordHash: string | null = null;
     if (payload.password) {
-      if (!limits.passwordProtection) {
-        throw new Error('Password protection requires a Plus or Pro plan');
-      }
       passwordHash = await hashPassword(payload.password);
     }
 
-    // Burn after read check
-    let burnAfterRead = false;
-    if (payload.burnAfterRead) {
-      if (!limits.burnAfterFirstView) {
-        throw new Error('Burn-after-first-view requires a Plus or Pro plan');
-      }
-      burnAfterRead = true;
-    }
+    const burnAfterRead = Boolean(payload.burnAfterRead);
+    const allowDownload = payload.allowDownload !== false;
 
-    // Download restriction check
-    let allowDownload = true;
-    if (payload.allowDownload === false) {
-      if (!limits.downloadRestrictionOption) {
-        throw new Error('Disabling download requires a Plus or Pro plan');
-      }
-      allowDownload = false;
-    }
-
-    // Custom alias check
+    // Custom alias support (Free for all users)
     let id: string;
     if (payload.customAlias && payload.customAlias.trim() !== '') {
-      if (!limits.customShareAlias) {
-        throw new Error('Custom share aliases require a Plus or Pro plan');
-      }
-      const existing = await this.repo.getShareById(payload.customAlias.trim());
+      const sanitizedAlias = payload.customAlias.trim();
+      const existing = await this.repo.getShareById(sanitizedAlias);
       if (existing) {
         throw new Error('Custom alias is already in use');
       }
-      id = payload.customAlias.trim();
+      id = sanitizedAlias;
     } else {
       id = generateSecureId(10);
     }
 
     const now = getCurrentTimestamp(this.env);
-    const expiresAt = now + EXPIRATION_SECONDS; // Fixed 300 seconds
+    const expiresAt = now + EXPIRATION_SECONDS; // Fixed strictly to 300 seconds (5 min)
 
     const rawDeletionToken = generateDeletionToken();
     const deletionTokenHash = await sha256Hex(rawDeletionToken);
@@ -101,8 +81,9 @@ export class ShareService {
       text_format: payload.textFormat || 'plain_text',
       syntax_language: payload.syntaxLanguage || 'plaintext',
       original_filename: null,
+      storage_key: null,
       r2_object_key: null,
-      file_mime_type: 'text/plain',
+      file_mime_type: null,
       file_size: textBytes,
       password_hash: passwordHash,
       burn_after_read: burnAfterRead ? 1 : 0,
@@ -112,7 +93,7 @@ export class ShareService {
     });
 
     const appUrl = (this.env.APP_URL || '').replace(/\/$/, '');
-    const shareUrl = `${appUrl}/s/${id}`;
+    const shareUrl = `${appUrl}/t/${id}`;
 
     return {
       id,
@@ -137,11 +118,15 @@ export class ShareService {
       throw err;
     }
 
-    // MANDATORY REQUIREMENT: If current server timestamp >= expires_at, deny access immediately
+    // MANDATORY REQUIREMENT: If server timestamp >= expires_at, deny access immediately!
     if (now >= share.expires_at || share.is_deleted === 1) {
-      // Lazy cleanup
+      // Lazy cleanup: purge immediately
+      const storageKey = share.storage_key || share.r2_object_key;
+      if (storageKey) {
+        this.storage.deleteImage(storageKey).catch(() => {});
+      }
       this.repo.purgeShare(id).catch(() => {});
-      const err = new Error('This share has expired');
+      const err = new Error('This share has expired and is no longer accessible');
       (err as any).status = 410;
       throw err;
     }
@@ -211,7 +196,7 @@ export class ShareService {
     };
   }
 
-  // Image Upload Workflow
+  // Image Upload Workflow via Cloudflare Workers KV
   async initImageUpload(
     payload: InitImageUploadPayload,
     plan: PlanType,
@@ -219,54 +204,36 @@ export class ShareService {
   ): Promise<InitImageUploadResult> {
     if (!this.storage.isAvailable()) {
       const err = new Error(
-        'Image storage is currently unavailable. Text sharing remains operational. To enable image sharing, configure Cloudflare R2 or run Wrangler with local R2 simulation.'
+        'Image storage (Cloudflare Workers KV) is currently unavailable. Text sharing remains operational.'
       );
       (err as any).status = 503;
       throw err;
     }
 
-    const limits = PLANS[plan];
+    const maxImageBytes = parseInt(this.env.MAX_IMAGE_BYTES || '', 10) || FREE_TIER_LIMITS.maxImageBytes;
 
-    if (payload.fileSize > limits.maxImageBytes) {
-      throw new Error(`Image size exceeds plan limit of ${Math.round(limits.maxImageBytes / (1024 * 1024))} MB`);
+    if (payload.fileSize > maxImageBytes) {
+      throw new Error(`Image size exceeds free tier limit of ${Math.round(maxImageBytes / (1024 * 1024))} MB`);
     }
 
     let passwordHash: string | null = null;
     if (payload.password) {
-      if (!limits.passwordProtection) {
-        throw new Error('Password protection requires a Plus or Pro plan');
-      }
       passwordHash = await hashPassword(payload.password);
     }
 
-    let burnAfterRead = false;
-    if (payload.burnAfterRead) {
-      if (!limits.burnAfterFirstView) {
-        throw new Error('Burn-after-first-view requires a Plus or Pro plan');
-      }
-      burnAfterRead = true;
-    }
-
-    let allowDownload = true;
-    if (payload.allowDownload === false) {
-      if (!limits.downloadRestrictionOption) {
-        throw new Error('Disabling download requires a Plus or Pro plan');
-      }
-      allowDownload = false;
-    }
+    const burnAfterRead = Boolean(payload.burnAfterRead);
+    const allowDownload = payload.allowDownload !== false;
 
     if (payload.customAlias && payload.customAlias.trim() !== '') {
-      if (!limits.customShareAlias) {
-        throw new Error('Custom share aliases require a Plus or Pro plan');
-      }
-      const existing = await this.repo.getShareById(payload.customAlias.trim());
+      const sanitizedAlias = payload.customAlias.trim();
+      const existing = await this.repo.getShareById(sanitizedAlias);
       if (existing) {
         throw new Error('Custom alias is already in use');
       }
     }
 
     const uploadToken = generateSecureId(24);
-    const r2Key = `uploads/${uploadToken}`;
+    const storageKey = `img:${uploadToken}`;
     const now = getCurrentTimestamp(this.env);
 
     await this.repo.createUploadSession({
@@ -274,21 +241,22 @@ export class ShareService {
       filename: payload.filename,
       file_size: payload.fileSize,
       file_mime_type: payload.fileMimeType,
-      r2_key: r2Key,
+      storage_key: storageKey,
+      r2_key: storageKey,
       password_hash: passwordHash,
       burn_after_read: burnAfterRead ? 1 : 0,
       allow_download: allowDownload ? 1 : 0,
       custom_alias: payload.customAlias || null,
       owner_id: ownerId || null,
       created_at: now,
-      expires_at: now + 600, // 10 minutes to finish upload
+      expires_at: now + 600, // 10 minutes session timeout
       is_finalized: 0,
     });
 
     return {
       uploadToken,
       uploadUrl: `/api/uploads/${uploadToken}`,
-      maxBytes: limits.maxImageBytes,
+      maxBytes: maxImageBytes,
       expiresInSeconds: 600,
     };
   }
@@ -309,8 +277,14 @@ export class ShareService {
       throw err;
     }
 
-    // Write directly into private storage (local simulation or production R2)
-    await this.storage.uploadImage(session.r2_key, stream, session.file_mime_type);
+    const storageKey = session.storage_key || session.r2_key;
+    if (!storageKey) {
+      const err = new Error('Storage key missing from upload session');
+      (err as any).status = 400;
+      throw err;
+    }
+    // Write binary bytes directly into Workers KV
+    await this.storage.uploadImage(storageKey, stream, session.file_mime_type, session.file_size);
   }
 
   async finalizeImageUpload(uploadToken: string): Promise<FinalizeImageUploadResult> {
@@ -323,22 +297,23 @@ export class ShareService {
       throw err;
     }
 
-    // Verify object exists in storage
-    const exists = await this.storage.hasImage(session.r2_key);
-    if (!exists) {
-      const err = new Error('No uploaded file found in storage');
+    const storageKey = session.storage_key || session.r2_key;
+    if (!storageKey) {
+      const err = new Error('Storage key missing from upload session');
+      (err as any).status = 400;
+      throw err;
+    }
+
+    // Verify object exists in KV
+    const obj = await this.storage.getImage(storageKey);
+    if (!obj) {
+      const err = new Error('No uploaded image found in storage');
       (err as any).status = 400;
       throw err;
     }
 
     const shareId = session.custom_alias || generateSecureId(10);
-    const finalR2Key = `images/${shareId}`;
-
-    // Move or copy to permanent share key (or reuse upload key)
-    // In Cloudflare R2, we can fetch and write to finalR2Key, or simply point r2_object_key to session.r2_key.
-    // Pointing directly to session.r2_key avoids double-copy latency and R2 write costs!
-
-    const expiresAt = now + EXPIRATION_SECONDS; // Fixed 300 seconds
+    const expiresAt = now + EXPIRATION_SECONDS; // Fixed strictly to 300 seconds (5 min)
     const rawDeletionToken = generateDeletionToken();
     const deletionTokenHash = await sha256Hex(rawDeletionToken);
 
@@ -352,12 +327,13 @@ export class ShareService {
       text_format: null,
       syntax_language: null,
       original_filename: session.filename,
-      r2_object_key: session.r2_key,
+      storage_key: storageKey,
+      r2_object_key: storageKey,
       file_mime_type: session.file_mime_type,
       file_size: session.file_size,
       password_hash: session.password_hash,
       burn_after_read: session.burn_after_read,
-      owner_id: session.owner_id,
+      owner_id: session.owner_id || null,
       deletion_token_hash: deletionTokenHash,
       allow_download: session.allow_download,
     });
@@ -398,13 +374,16 @@ export class ShareService {
       throw err;
     }
 
+    const storageKey = share.storage_key || share.r2_object_key;
+
+    // MANDATORY REQUIREMENT: Before returning, check D1.
+    // If expired or deleted, reject access immediately and purge!
     if (now >= share.expires_at || share.is_deleted === 1) {
-      // Lazy cleanup
-      if (share.r2_object_key) {
-        this.storage.deleteImage(share.r2_object_key).catch(() => {});
+      if (storageKey) {
+        this.storage.deleteImage(storageKey).catch(() => {});
       }
       this.repo.purgeShare(id).catch(() => {});
-      const err = new Error('This share has expired');
+      const err = new Error('This share has expired and is no longer accessible');
       (err as any).status = 410;
       throw err;
     }
@@ -429,15 +408,16 @@ export class ShareService {
       }
     }
 
-    if (!share.r2_object_key) {
+    if (!storageKey) {
       const err = new Error('Image data missing');
       (err as any).status = 404;
       throw err;
     }
 
-    const obj = await this.storage.getImage(share.r2_object_key);
+    // Only retrieve content from KV after all D1 validity checks pass!
+    const obj = await this.storage.getImage(storageKey);
     if (!obj) {
-      const err = new Error('Image object not found');
+      const err = new Error('Image object not found in storage');
       (err as any).status = 404;
       throw err;
     }
@@ -449,15 +429,17 @@ export class ShareService {
         (err as any).status = 410;
         throw err;
       }
+      // Delete from storage immediately upon successful burn view
+      this.storage.deleteImage(storageKey).catch(() => {});
     }
 
     await this.repo.incrementViewCount(id);
 
     return {
       stream: obj.stream,
-      contentType: share.file_mime_type || obj.contentType,
-      filename: share.original_filename || 'image',
-      fileSize: share.file_size || obj.size,
+      contentType: share.file_mime_type || obj.contentType || 'image/jpeg',
+      filename: share.original_filename || 'image.jpg',
+      fileSize: share.file_size || obj.size || 0,
       allowDownload: share.allow_download === 1,
     };
   }
@@ -473,8 +455,8 @@ export class ShareService {
     let authorized = false;
 
     if (deletionToken && share.deletion_token_hash) {
-      const computedHash = await sha256Hex(deletionToken);
-      if (computedHash === share.deletion_token_hash) {
+      const tokenHash = await sha256Hex(deletionToken);
+      if (tokenHash === share.deletion_token_hash) {
         authorized = true;
       }
     }
@@ -489,22 +471,24 @@ export class ShareService {
       throw err;
     }
 
-    // Delete R2 object if image
-    if (share.r2_object_key) {
+    const storageKey = share.storage_key || share.r2_object_key;
+    // Delete KV object first
+    if (storageKey) {
       try {
-        await this.storage.deleteImage(share.r2_object_key);
+        await this.storage.deleteImage(storageKey);
       } catch (err: any) {
         // Enqueue retry
         await this.repo.enqueueRetry(
           generateSecureId(16),
-          'r2_image',
-          share.r2_object_key,
-          err?.message || 'R2 delete failure',
+          'kv_image',
+          storageKey,
+          err?.message || 'KV delete failure',
           getCurrentTimestamp(this.env)
         );
       }
     }
 
+    // Then delete D1 record
     await this.repo.purgeShare(id);
   }
 

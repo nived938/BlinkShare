@@ -82,20 +82,36 @@ class MockD1PreparedStatement {
       changes: 1,
     };
 
+    if (q.startsWith('CREATE TABLE') || q.startsWith('CREATE INDEX')) {
+      return { success: true, results: [], meta: dummyMeta } as any;
+    }
+
+    if (q.includes('SELECT 1 FROM rate_limit_counters')) {
+      return { success: true, results: [{ '1': 1 } as T], meta: dummyMeta } as any;
+    }
+
+    if (q.includes('coalesce(sum(file_size), 0) as activeBytes')) {
+      const shares = this.tables.get('shares')!;
+      const cutoff = this.boundValues[0] ?? 0;
+      const active = shares.filter((s) => s.is_deleted === 0 && s.is_burned === 0 && s.expires_at > cutoff);
+      const activeBytes = active.reduce((acc, s) => acc + (s.file_size || 0), 0);
+      return { success: true, results: [{ activeCount: active.length, activeBytes } as T], meta: dummyMeta } as any;
+    }
+
     // INSERT INTO shares
     if (q.includes('INSERT INTO shares')) {
       const shares = this.tables.get('shares')!;
       const [
         id, content_type, created_at, expires_at, title,
         text_content, text_format, syntax_language, original_filename,
-        r2_object_key, file_mime_type, file_size, password_hash,
+        storage_key, file_mime_type, file_size, password_hash,
         burn_after_read, owner_id, deletion_token_hash, allow_download
       ] = this.boundValues;
 
       shares.push({
         id, content_type, created_at, expires_at, title,
         text_content, text_format, syntax_language, original_filename,
-        r2_object_key, file_mime_type, file_size, password_hash,
+        storage_key, r2_object_key: storage_key, file_mime_type, file_size, password_hash,
         burn_after_read, owner_id, deletion_token_hash, view_count: 0,
         is_burned: 0, is_deleted: 0, allow_download
       });

@@ -6,7 +6,8 @@ import { ImageStorageService } from './imageStorageService';
 
 export interface CleanupResult {
   expiredSharesProcessed: number;
-  r2ImagesDeleted: number;
+  kvImagesDeleted: number;
+  r2ImagesDeleted?: number; // alias
   d1SharesPurged: number;
   uploadSessionsCleaned: number;
   retriesAttempted: number;
@@ -24,12 +25,13 @@ export class CleanupService {
 
   /**
    * Run scheduled cleanup triggered by Cloudflare Cron every minute.
-   * Processes in bounded batches and handles retries.
+   * Processes in bounded batches and handles retries to stay well within Free tier limits.
    */
   async runScheduledCleanup(batchSize = 50): Promise<CleanupResult> {
     const now = getCurrentTimestamp(this.env);
     const result: CleanupResult = {
       expiredSharesProcessed: 0,
+      kvImagesDeleted: 0,
       r2ImagesDeleted: 0,
       d1SharesPurged: 0,
       uploadSessionsCleaned: 0,
@@ -42,25 +44,29 @@ export class CleanupService {
     result.expiredSharesProcessed = expiredShares.length;
 
     for (const share of expiredShares) {
-      // If it's an image, delete from R2 first
-      if (share.r2_object_key) {
+      const storageKey = share.storage_key || share.r2_object_key;
+
+      // If it's an image, delete binary object from Workers KV first
+      if (storageKey) {
         try {
-          await this.storage.deleteImage(share.r2_object_key);
-          result.r2ImagesDeleted++;
+          await this.storage.deleteImage(storageKey);
+          result.kvImagesDeleted++;
+          result.r2ImagesDeleted!++;
         } catch (err: any) {
-          // If R2 deletion fails, enqueue retry and DO NOT purge D1 row yet!
+          // If KV deletion fails, enqueue retry and DO NOT purge D1 row yet!
+          // D1 row preserves the storage_key so it can be retried on next pass.
           await this.repo.enqueueRetry(
             generateSecureId(16),
-            'r2_image',
-            share.r2_object_key,
-            err?.message || 'R2 delete error',
+            'kv_image',
+            storageKey,
+            err?.message || 'KV delete error',
             now
           );
-          continue; // skip purging D1 record until R2 delete succeeds
+          continue; // skip purging D1 record until KV delete succeeds
         }
       }
 
-      // Once R2 is cleared (or for text), purge D1 record
+      // Once storage is cleared (or for text), purge D1 record
       try {
         await this.repo.purgeShare(share.id);
         result.d1SharesPurged++;
@@ -75,26 +81,27 @@ export class CleanupService {
       }
     }
 
-    // 2. Process expired or finalized upload sessions
+    // 2. Process expired or abandoned upload sessions
     const expiredSessions = await this.repo.findExpiredUploadSessions(now, batchSize);
     for (const session of expiredSessions) {
-      if (session.is_finalized === 0 && session.r2_key) {
-        // Abandoned upload: delete incomplete object from R2
+      const storageKey = session.storage_key || session.r2_key;
+      if (session.is_finalized === 0 && storageKey) {
+        // Abandoned upload: delete incomplete object from KV
         try {
-          await this.storage.deleteImage(session.r2_key);
+          await this.storage.deleteImage(storageKey);
         } catch {}
       }
       await this.repo.deleteUploadSession(session.token);
       result.uploadSessionsCleaned++;
     }
 
-    // 3. Process retries from queue
+    // 3. Process retries from queue (bounded to 20 per minute to respect Free limits)
     const retries = await this.repo.getCleanupRetries(20);
     result.retriesAttempted = retries.length;
 
     for (const retry of retries) {
       try {
-        if (retry.resource_type === 'r2_image') {
+        if (retry.resource_type === 'kv_image' || retry.resource_type === 'r2_image') {
           await this.storage.deleteImage(retry.resource_identifier);
         } else if (retry.resource_type === 'd1_share') {
           await this.repo.purgeShare(retry.resource_identifier);

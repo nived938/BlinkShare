@@ -12,9 +12,9 @@ healthRouter.get('/', (c) => {
     status: 'ok',
     timestamp: getCurrentTimestamp(c.env),
     service: 'BlinkShare API',
-    version: '1.0.0',
+    tier: '100% Free Plan (Zero Billing)',
+    version: '2.0.0',
     edge: true,
-    imageStorageMode: storage.getMode(),
     imageStorageAvailable: storage.isAvailable(),
   });
 });
@@ -25,14 +25,14 @@ healthRouter.get('/database', async (c) => {
     const result = await c.env.DB.prepare('SELECT 1 as alive').first();
     return c.json({
       status: 'ok',
-      database: 'Cloudflare D1',
+      database: 'Cloudflare D1 (Free Tier)',
       connected: result?.alive === 1,
     });
   } catch (err: any) {
     return c.json(
       {
         status: 'error',
-        database: 'Cloudflare D1',
+        database: 'Cloudflare D1 (Free Tier)',
         connected: false,
         error: err.message,
       },
@@ -44,22 +44,15 @@ healthRouter.get('/database', async (c) => {
 // GET /api/health/storage
 healthRouter.get('/storage', async (c) => {
   const storage = new ImageStorageService(c.env);
-  const mode = storage.getMode();
   const available = storage.isAvailable();
 
-  if (!available) {
-    return c.json({
-      status: 'disabled',
-      mode,
-      available: false,
-      message: 'Cloudflare R2 is not configured. Text sharing is active. For local testing, use Wrangler local R2 simulation.',
-    });
-  }
-
   return c.json({
-    status: 'ok',
-    mode,
-    available: true,
-    storage: mode === 'r2' ? 'Cloudflare R2 (Production)' : 'Cloudflare R2 (Local Simulation)',
+    status: available ? 'ok' : 'disabled',
+    storageMode: 'kv',
+    storageAvailable: available,
+    storage: 'Cloudflare Workers KV (Free Tier - 0 Billing Required)',
+    message: available
+      ? 'Cloudflare Workers KV storage active (100% Free Tier).'
+      : 'Cloudflare Workers KV binding is not configured.',
   });
 });

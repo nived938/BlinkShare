@@ -10,8 +10,18 @@ import { accountRouter } from './routes/account';
 import { billingRouter } from './routes/billing';
 import { healthRouter } from './routes/health';
 import { CleanupService } from './services/cleanupService';
+import { ShareRepository } from './repositories/shareRepository';
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
+
+// Automatic schema bootstrap middleware (ensures tables exist without manual commands)
+app.use('*', async (c, next) => {
+  if (c.env?.DB) {
+    const repo = new ShareRepository(c.env.DB);
+    await repo.ensureSchema();
+  }
+  await next();
+});
 
 // CORS middleware
 app.use('*', async (c, next) => {

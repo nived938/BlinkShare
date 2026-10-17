@@ -1,31 +1,34 @@
-# Cloudflare Setup & Resource Provisioning
+# Cloudflare Free Production Deployment Guide
 
-Follow these steps to deploy BlinkShare to production on your Cloudflare account.
-
-> **Note on Cloudflare R2 Billing**: You do NOT need active Cloudflare R2 billing to develop or test BlinkShare locally. Local development uses Wrangler's built-in Miniflare R2 simulation (`IMAGE_STORAGE_MODE=local`). If deploying to Cloudflare before activating R2 billing, set `IMAGE_STORAGE_MODE=disabled` or omit R2 bucket bindings; text sharing, user accounts, and pricing remain 100% operational.
+Deploy BlinkShare completely on Cloudflare's **100% Free Plan** with **Zero Billing, Zero Payment Methods, and Zero Credit Cards**.
 
 ---
 
-## 1. Cloudflare Login
+## Free Architecture Overview
 
-Log in to your Cloudflare account via Wrangler:
+| Component | Cloudflare Service | Free Tier Allocation |
+| :--- | :--- | :--- |
+| **API Worker** | Cloudflare Workers Free | 100,000 requests / day |
+| **Database** | Cloudflare D1 (SQLite) | 5M read rows/day, 100K write rows/day |
+| **Image Storage** | Cloudflare Workers KV | 100,000 read ops/day, 1,000 write ops/day, 1 GB storage |
+| **Frontend** | Cloudflare Pages Free | Unlimited requests, 500 builds/month |
+| **Cleanup** | Cron Triggers Free | 1 cron schedule included |
 
+---
+
+## Step-by-Step Deployment
+
+### 1. Cloudflare Login
 ```bash
 wrangler login
 ```
 
----
-
-## 2. Create Cloudflare D1 Database
-
-Run:
-
+### 2. Create Free Cloudflare D1 Database
 ```bash
 wrangler d1 create blinkshare-db
 ```
 
-Output will display your database binding configuration:
-
+Output:
 ```toml
 [[d1_databases]]
 binding = "DB"
@@ -33,105 +36,51 @@ database_name = "blinkshare-db"
 database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
 
-Paste this `database_id` into `wrangler.toml` and `apps/api/wrangler.toml`.
+Paste the `database_id` into `wrangler.toml` and `apps/api/wrangler.toml`.
 
-Apply migrations to remote production D1:
-
+Apply initial schema:
 ```bash
 wrangler d1 execute blinkshare-db --remote --file=apps/api/migrations/0001_initial_schema.sql
 ```
 
----
+### 3. Create Free Cloudflare Workers KV Namespace
+```bash
+wrangler kv namespace create IMAGE_STORE
+```
 
-## 3. Cloudflare R2 Setup (When Billing Is Activated)
+Output:
+```toml
+[[kv_namespaces]]
+binding = "IMAGE_STORE"
+id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
 
-### Pre-billing State:
-If Cloudflare R2 billing is not enabled yet:
-- In production, set `IMAGE_STORAGE_MODE = "disabled"` in your worker configuration.
-- Text sharing via D1 works completely without R2.
-- Any image upload requests gracefully return HTTP 503 explaining that storage is being configured, without breaking the site.
+Paste the `id` into `wrangler.toml` and `apps/api/wrangler.toml`.
 
-### Activating Real R2 Storage:
-Once you enable R2 billing in the Cloudflare Dashboard:
-
-1. **Enable R2 in Dashboard**:
-   - Go to [Cloudflare Dashboard](https://dash.cloudflare.com) -> **R2 Object Storage**.
-   - If prompted, activate R2 billing (Cloudflare provides a generous free tier of 10 GB/month storage and millions of operations).
-
-2. **Create the Private Bucket**:
-   - In Dashboard or CLI:
-   ```bash
-   wrangler r2 bucket create blinkshare-images
-   ```
-   - **Crucial**: Keep the bucket strictly private. Do NOT enable public bucket access. All image bytes must be accessed exclusively through the 5-minute authenticated Worker API.
-
-3. **Update Production Configuration**:
-   - In `apps/api/wrangler.toml`:
-   ```toml
-   [vars]
-   IMAGE_STORAGE_MODE = "r2"
-
-   [[r2_buckets]]
-   binding = "IMAGES"
-   bucket_name = "blinkshare-images"
-   ```
-
-4. **Redeploy the API Worker**:
-   ```bash
-   pnpm --filter @blinkshare/api deploy
-   ```
-
-5. **Verify Setup**:
-   - Check `https://<your-worker-domain>/api/health/storage` — it will return:
-     `{ "status": "ok", "storageMode": "r2", "storageAvailable": true }`.
-   - Test image upload, preview, and verify automatic 5-minute cleanup.
-
----
-
-## 4. Set Production Secrets
-
-Set the cryptographic secrets on the Worker:
-
+### 4. Set Worker Secrets
 ```bash
 wrangler secret put RATE_LIMIT_SECRET
 wrangler secret put SESSION_SECRET
 ```
 
-Optional payment provider secrets:
-```bash
-# If using Stripe:
-wrangler secret put STRIPE_SECRET_KEY
-wrangler secret put STRIPE_WEBHOOK_SECRET
-
-# If using Razorpay:
-wrangler secret put RAZORPAY_KEY_ID
-wrangler secret put RAZORPAY_KEY_SECRET
-wrangler secret put RAZORPAY_WEBHOOK_SECRET
-```
-
----
-
-## 5. Deploy Cloudflare Worker API
-
-Deploy the API Worker:
-
+### 5. Deploy Cloudflare Worker API
 ```bash
 pnpm --filter @blinkshare/api deploy
 ```
 
----
-
-## 6. Deploy Cloudflare Pages Frontend
-
-Build the web application:
-
+### 6. Deploy Cloudflare Pages Frontend
 ```bash
 pnpm --filter @blinkshare/shared build
 pnpm --filter @blinkshare/web build
-```
-
-Deploy the `apps/web/dist` directory to Cloudflare Pages:
-
-```bash
 wrangler pages deploy apps/web/dist --project-name=blinkshare-web
 ```
+
+---
+
+## Production Smoke Test
+
+1. Visit your Cloudflare Pages URL.
+2. Share a text snippet: verify 5-minute countdown and copy link.
+3. Open in another browser: verify content renders and auto-expires.
+4. Upload an image (under 5 MB): verify thumbnail, full image view, and deletion after 5 minutes.
+5. Check `/api/health`: confirms `imageStorageAvailable: true` and `tier: "100% Free Plan (Zero Billing)"`.

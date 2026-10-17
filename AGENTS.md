@@ -9,18 +9,22 @@ This document provides definitive instructions, constraints, and operational gui
 BlinkShare is a fast, edge-native text, code snippet, and image sharing platform where **every share expires after exactly 300 seconds (5 minutes)**.
 
 ### Non-Negotiable Invariants:
-1. **The 300-Second Hard Expiry**:
+1. **100% Free, Zero Billing Dependency**:
+   - The entire website operates within Cloudflare's **Free Tier** (Workers Free, D1 Free, Workers KV Free, Pages Free).
+   - Never introduce paid services, subscriptions, credit cards, or billing requirements.
+   - Do not use Cloudflare R2; image storage is powered by **Cloudflare Workers KV** (`IMAGE_STORE`).
+   - Commercial billing (Stripe, Razorpay, paid subscriptions) is completely removed. Every feature is 100% free for all users.
+2. **The 300-Second Hard Expiry**:
    - Every share expires in exactly 300 seconds (`now + 300`).
-   - No paid plan, parameter, header, or override may increase this duration.
    - If `now >= expires_at`, the server MUST reject content retrieval with `410 Gone`. Content must never be returned even if physical cleanup has not run yet.
-2. **Physical Deletion**:
-   - Upon expiration or manual deletion, text rows in D1 and image binary objects in R2 are physically deleted, not soft-deleted.
-3. **No R2 Billing Prerequisite**:
-   - The application supports `IMAGE_STORAGE_MODE=local` (Wrangler/Miniflare simulated R2 storage) so local development and testing never require active Cloudflare billing or credit cards.
-   - When R2 is unconfigured or disabled, text sharing via D1 remains 100% operational. Never store image binary bytes in D1 as a workaround.
-4. **Edge Security & Cache Invalidation**:
+3. **Physical Deletion**:
+   - Upon expiration or manual deletion, text rows in D1 and image binary objects in Workers KV are physically deleted, not soft-deleted.
+   - KV binary objects must be deleted before or concurrently with D1 row removal.
+4. **Binary KV Storage (No Base64 Inflation)**:
+   - Images are stored as raw binary in Workers KV up to 5 MB per upload.
+   - Never encode binary images to base64, preserving storage efficiency.
+5. **Edge Security & Cache Invalidation**:
    - All shares and image streams MUST emit `Cache-Control: private, no-store, no-cache, must-revalidate`.
-   - Image buckets in R2 must remain strictly private. Never expose public R2 URLs that bypass expiration checks.
 
 ---
 
@@ -34,20 +38,20 @@ blinkshare/
 │   │   │   ├── api/            # API client wrapper
 │   │   │   ├── components/     # UI components (ShareTextTab, ShareImageTab, Modals)
 │   │   │   ├── hooks/          # React hooks (useAuth)
-│   │   │   ├── pages/          # Router pages (Home, Viewers, Pricing, Dashboard)
+│   │   │   ├── pages/          # Router pages (Home, Viewers, Pricing/Limits, Dashboard)
 │   │   │   └── styles/         # Global styles
 │   └── api/                    # Cloudflare Worker, Hono.js
 │       ├── src/
 │       │   ├── lib/            # WebCrypto helpers, clock utilities
 │       │   ├── middleware/     # Auth, Rate limiting, Security headers
-│       │   ├── repositories/   # D1 database prepared statement queries
-│       │   ├── routes/         # Hono routes (shares, uploads, plans, account, billing)
-│       │   ├── services/       # ShareService, ImageStorageService, CleanupService
-│       │   └── types/          # Worker environment bindings
-│       ├── migrations/         # D1 SQL migration scripts
-│       └── test/               # Vitest automated test suite
+│       │   ├── repositories/   # D1 database prepared statements + auto ensureSchema()
+│       │   ├── routes/         # Hono routes (shares, uploads, plans, account, billing, health)
+│       │   ├── services/       # ShareService, ImageStorageService (KV), CleanupService
+│       │   └── types/          # Worker environment bindings (DB, IMAGE_STORE)
+│       ├── migrations/         # D1 SQL migration scripts (0001_initial_schema.sql)
+│       └── test/               # Vitest automated test suite (mockD1, mockKV)
 ├── packages/
-│   └── shared/                 # Shared TypeScript contracts, Zod schemas, plan configs
+│   └── shared/                 # Shared TypeScript contracts, Zod schemas, free quota constants
 ├── docs/                       # Architectural & operational documentation
 ├── wrangler.toml               # Root Cloudflare Wrangler configuration
 └── AGENTS.md                   # Agent operations manual (this file)
@@ -74,9 +78,6 @@ pnpm test
 
 ### Local Development
 ```bash
-# Execute local D1 SQLite migrations
-pnpm --filter @blinkshare/api wrangler d1 execute blinkshare-db --local --file=./migrations/0001_initial_schema.sql
-
 # Start Backend Worker API (port 8787)
 pnpm dev:api
 
@@ -84,23 +85,19 @@ pnpm dev:api
 pnpm dev:web
 ```
 
-> **Note for Windows Environments**: When executing chained shell commands, use `;` instead of `&&` in PowerShell.
+> **Zero Configuration First Boot**:
+> The database tables auto-initialize on the first incoming request via `ShareRepository.ensureSchema()`. Running manual `wrangler d1 execute` migrations is optional in local development.
 
 ---
 
-## 4. Storage Architecture (`ImageStorageService`)
+## 4. Free Tier Quotas & Limits
 
-All image operations MUST route through `apps/api/src/services/imageStorageService.ts`:
-- `uploadImage(key, data, mimeType)`
-- `getImage(key)`
-- `deleteImage(key)`
-- `isAvailable()`
-- `getMode()`
-
-### Supported Storage Modes (`IMAGE_STORAGE_MODE`):
-- `local`: Miniflare local simulated R2 storage (`.wrangler/state/v3/r2`).
-- `r2`: Remote Cloudflare R2 bucket (`IMAGES` binding).
-- `disabled`: Gracefully returns 503 for image uploads while allowing full D1 text sharing.
+- **Maximum Image Size**: Strict 5 MB (Cloudflare KV Free limit is 25 MB/key).
+- **Maximum Text Size**: Strict 100 KB (D1 SQLite Free).
+- **Anonymous Daily Quota**: 10 shares / day per visitor (hashed IP).
+- **Registered Free Account Quota**: 100 shares / day.
+- **Per-minute Rate Limit**: 20 requests / minute.
+- **Global Storage Guard**: Pauses new image uploads if active stored bytes reach 500 MB (safe buffer under 1 GB KV free tier).
 
 ---
 

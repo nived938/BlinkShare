@@ -181,16 +181,10 @@ export const api = {
       method: 'DELETE',
     }),
 
-  // Billing
+  // Billing & Free Tier status
   getBillingStatus: () => request<any>('/billing'),
-
-  createCheckout: (plan: PlanType) =>
-    request<{ checkoutUrl?: string; orderId?: string; keyId?: string; message?: string }>('/billing/checkout', {
-      method: 'POST',
-      body: JSON.stringify({ plan }),
-    }),
 
   // Health & Storage Info
   getStorageHealth: () =>
-    request<{ status: string; storageMode: 'local' | 'r2' | 'disabled'; storageAvailable: boolean; message: string }>('/health/storage'),
+    request<{ status: string; storageMode: string; storageAvailable: boolean; message: string; storage: string }>('/health/storage'),
 };

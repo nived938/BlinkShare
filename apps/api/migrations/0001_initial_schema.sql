@@ -1,4 +1,4 @@
--- 0001_initial_schema.sql: Core schema for BlinkShare
+-- 0001_initial_schema.sql: 100% Free Core Schema for BlinkShare (D1 SQLite + KV)
 
 CREATE TABLE IF NOT EXISTS shares (
   id TEXT PRIMARY KEY,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS shares (
   text_format TEXT DEFAULT 'plain_text',
   syntax_language TEXT DEFAULT 'plaintext',
   original_filename TEXT,
-  r2_object_key TEXT,
+  storage_key TEXT,
   file_mime_type TEXT,
   file_size INTEGER,
   password_hash TEXT,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS upload_sessions (
   filename TEXT NOT NULL,
   file_size INTEGER NOT NULL,
   file_mime_type TEXT NOT NULL,
-  r2_key TEXT NOT NULL,
+  storage_key TEXT NOT NULL,
   password_hash TEXT,
   burn_after_read INTEGER NOT NULL DEFAULT 0,
   allow_download INTEGER NOT NULL DEFAULT 1,
@@ -63,20 +63,6 @@ CREATE TABLE IF NOT EXISTS users (
   plan TEXT NOT NULL DEFAULT 'free',
   created_at INTEGER NOT NULL
 );
-
-CREATE TABLE IF NOT EXISTS subscriptions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  provider TEXT NOT NULL,
-  subscription_id TEXT NOT NULL,
-  plan TEXT NOT NULL,
-  status TEXT NOT NULL,
-  current_period_end INTEGER NOT NULL,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 
 CREATE TABLE IF NOT EXISTS share_reports (
   id TEXT PRIMARY KEY,

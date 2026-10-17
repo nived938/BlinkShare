@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { registerSchema, loginSchema, UserShareItem } from '@blinkshare/shared';
 import { Env, AppVariables } from '../types/env';
 import { AuthService } from '../services/authService';
-import { ShareRepository } from '../repositories/shareRepository';
+import { ShareRepository, ShareRecord } from '../repositories/shareRepository';
 import { ShareService } from '../services/shareService';
 import { getCurrentTimestamp } from '../lib/clock';
 
@@ -83,7 +83,7 @@ accountRouter.get('/shares', async (c) => {
   const now = getCurrentTimestamp(c.env);
   const records = await repo.getUserActiveShares(auth.userId, now);
 
-  const shares: UserShareItem[] = records.map((record) => {
+  const shares: UserShareItem[] = records.map((record: ShareRecord) => {
     const secondsRemaining = Math.max(0, record.expires_at - now);
     return {
       id: record.id,

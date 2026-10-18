@@ -40,7 +40,7 @@ export const Footer: React.FC = () => {
                 <Link to="/features" className="hover:text-white transition-colors">Core Features</Link>
               </li>
               <li>
-                <Link to="/pricing" className="hover:text-white transition-colors">Free Limits & Quotas</Link>
+                <Link to="/pricing" className="hover:text-white transition-colors">Plans & Pricing</Link>
               </li>
               <li>
                 <Link to="/how-it-works" className="hover:text-white transition-colors">How It Works</Link>

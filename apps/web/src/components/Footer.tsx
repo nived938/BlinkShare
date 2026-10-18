@@ -80,7 +80,7 @@ export const Footer: React.FC = () => {
                 <Link to="/login" className="hover:text-white transition-colors">Sign In</Link>
               </li>
               <li>
-                <Link to="/signup" className="hover:text-white transition-colors">Create Account</Link>
+                <Link to="/signup" className="hover:text-white transition-colors">Sign Up Free (More Usage)</Link>
               </li>
               <li>
                 <Link to="/dashboard" className="hover:text-white transition-colors">My Active Shares</Link>

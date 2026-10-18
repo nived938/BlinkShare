@@ -87,15 +87,23 @@ export const FeaturesPage: React.FC = () => {
       <div className="p-8 sm:p-12 bg-zinc-950 border border-zinc-800 rounded-3xl text-white text-center shadow-2xl">
         <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">Ready to share without the clutter?</h2>
         <p className="text-sm text-zinc-400 max-w-xl mx-auto mb-8">
-          No sign up required for basic sharing. Open the homepage, paste your text or drop your screenshot, and get a link.
+          Start sharing immediately, or sign up for free to unlock 100 shares per day (10x more usage), live dashboard tracking, and higher upload capacity.
         </p>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-white text-black font-bold text-sm shadow-md hover:bg-zinc-200 transition-transform hover:scale-105 cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-black" />
-          <span>Create a 5-Minute Share</span>
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to="/signup"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-white text-black font-bold text-sm shadow-md hover:bg-zinc-200 transition-transform hover:scale-105 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-black" />
+            <span>Sign Up for Free (More Usage)</span>
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-zinc-900 border border-zinc-700 text-white font-bold text-sm hover:bg-zinc-800 transition-colors cursor-pointer"
+          >
+            <span>Start Sharing Now</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

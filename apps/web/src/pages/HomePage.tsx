@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { FileText, Image as ImageIcon, Clock, ShieldCheck, Flame } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileText, Image as ImageIcon, Clock, ShieldCheck, Flame, Sparkles } from 'lucide-react';
 import { CreateShareResult } from '@blinkshare/shared';
 import { ShareTextTab } from '../components/ShareTextTab';
 import { ShareImageTab } from '../components/ShareImageTab';
 import { CompletedShareModal } from '../components/CompletedShareModal';
+import { RateLimitedButton } from '../components/RateLimitedButton';
+import { useAuth } from '../hooks/useAuth';
 
 export const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'text' | 'image'>('text');
   const [completedShare, setCompletedShare] = useState<CreateShareResult | null>(null);
+  const { user } = useAuth();
 
   const handleTabChange = (newTab: 'text' | 'image') => {
     setActiveTab(newTab);
@@ -17,7 +21,7 @@ export const HomePage: React.FC = () => {
     <div className="min-h-screen bg-black text-white flex flex-col">
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 w-full">
         {/* Homepage Hero */}
-        <div className="text-center max-w-3xl mx-auto mb-10 space-y-4">
+        <div className="text-center max-w-3xl mx-auto mb-8 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
             <span className="text-white font-bold">Share it now. Gone in five.</span>
@@ -33,7 +37,7 @@ export const HomePage: React.FC = () => {
           </h1>
 
           <p className="text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Share text, code snippets, notes, and images through one simple link. 100% free, no sign-up required, and strictly purged.
+            Share text, code snippets, notes, and images through one simple link. 100% free forever — sign up for free to unlock 10x more usage.
           </p>
 
           <div className="inline-flex items-center gap-2 text-xs font-medium text-zinc-400 bg-zinc-900/80 px-3 py-1 rounded-full border border-zinc-800">
@@ -41,6 +45,27 @@ export const HomePage: React.FC = () => {
             <span>Every share expires automatically after 5 minutes.</span>
           </div>
         </div>
+
+        {/* Sign up for free for more usage banner (visible to non-logged-in visitors) */}
+        {!user && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white flex-shrink-0">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white">Want more usage & active share tracking?</p>
+                <p className="text-[11px] text-zinc-400">Sign up for free to unlock 100 shares/day (10x more usage) and a live dashboard.</p>
+              </div>
+            </div>
+            <Link
+              to="/signup"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all whitespace-nowrap shadow-sm hover:scale-105"
+            >
+              Sign Up Free (More Usage) →
+            </Link>
+          </div>
+        )}
 
         {/* The Sharing Card with Two Primary Tabs */}
         {completedShare ? (
@@ -54,10 +79,11 @@ export const HomePage: React.FC = () => {
           <div className="bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden transition-all">
             {/* Tab Navigation */}
             <div className="flex border-b border-zinc-800 bg-zinc-900/50 p-2 gap-2">
-              <button
+              <RateLimitedButton
                 type="button"
+                cooldownMs={600}
                 onClick={() => handleTabChange('text')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm font-bold transition-all ${
+                className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
                   activeTab === 'text'
                     ? 'bg-white text-black shadow-sm'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
@@ -65,12 +91,13 @@ export const HomePage: React.FC = () => {
               >
                 <FileText className="w-4 h-4" />
                 <span>Share Text & Code</span>
-              </button>
+              </RateLimitedButton>
 
-              <button
+              <RateLimitedButton
                 type="button"
+                cooldownMs={600}
                 onClick={() => handleTabChange('image')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm font-bold transition-all ${
+                className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
                   activeTab === 'image'
                     ? 'bg-white text-black shadow-sm'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
@@ -78,7 +105,7 @@ export const HomePage: React.FC = () => {
               >
                 <ImageIcon className="w-4 h-4" />
                 <span>Share Image & Screenshot</span>
-              </button>
+              </RateLimitedButton>
             </div>
 
             {/* Tab Content Panel */}

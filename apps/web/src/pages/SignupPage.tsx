@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Zap, AlertCircle } from 'lucide-react';
+import { Zap, AlertCircle, Check, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { RateLimitedButton } from '../components/RateLimitedButton';
 
 export const SignupPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -41,17 +42,41 @@ export const SignupPage: React.FC = () => {
   return (
     <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full bg-zinc-950 rounded-3xl border border-zinc-800 p-8 shadow-2xl">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <Link to="/" className="inline-flex items-center gap-2 mb-3">
             <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-black shadow-sm">
               <Zap className="w-5 h-5 fill-current" />
             </div>
             <span className="font-bold text-xl text-white">BlinkShare</span>
           </Link>
-          <h2 className="text-2xl font-bold text-white">Create an account</h2>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-bold text-zinc-300 mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-white" />
+            <span>100% Free Forever • Zero Billing</span>
+          </div>
+          <h2 className="text-2xl font-bold text-white">Sign Up for Free (More Usage)</h2>
           <p className="text-xs text-zinc-400 mt-1">
-            Access free account perks, active share tracking, and higher quotas.
+            Unlock 100 shares per day (10x more usage), personal live tracking dashboard, and higher capacity.
           </p>
+        </div>
+
+        {/* Benefits list */}
+        <div className="p-3 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl mb-6 space-y-2">
+          <div className="flex items-center gap-2 text-xs text-zinc-300">
+            <Check className="w-3.5 h-3.5 text-white flex-shrink-0" />
+            <span><strong className="text-white">100 shares / day</strong> (vs 10 guest daily quota)</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-zinc-300">
+            <Check className="w-3.5 h-3.5 text-white flex-shrink-0" />
+            <span>Personal dashboard to view and manage active shares</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-zinc-300">
+            <Check className="w-3.5 h-3.5 text-white flex-shrink-0" />
+            <span>Up to 15 MB images and 500 KB code snippets</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-zinc-300">
+            <Check className="w-3.5 h-3.5 text-white flex-shrink-0" />
+            <span>100% free forever — no credit card needed</span>
+          </div>
         </div>
 
         {error && (
@@ -98,13 +123,14 @@ export const SignupPage: React.FC = () => {
             />
           </div>
 
-          <button
+          <RateLimitedButton
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-xs text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 transition-all shadow-md disabled:opacity-50"
+            cooldownMs={1500}
+            className="w-full py-3 rounded-xl font-bold text-xs text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 transition-all shadow-md disabled:opacity-50 cursor-pointer"
           >
-            {loading ? 'Creating account...' : 'Create Free Account'}
-          </button>
+            {loading ? 'Creating account...' : 'Create Free Account (Unlock 100 Shares/Day)'}
+          </RateLimitedButton>
         </form>
 
         <p className="text-center text-xs text-zinc-400 mt-6">

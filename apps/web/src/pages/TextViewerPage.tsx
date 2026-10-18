@@ -37,6 +37,7 @@ import { CountdownTimer } from '../components/CountdownTimer';
 import { ExpiredNotice } from '../components/ExpiredNotice';
 import { ReportAbuseDialog } from '../components/ReportAbuseDialog';
 import { decryptText } from '../lib/e2ee';
+import { RateLimitedButton } from '../components/RateLimitedButton';
 
 export const TextViewerPage: React.FC = () => {
   const { shareId } = useParams<{ shareId: string }>();
@@ -252,13 +253,14 @@ export const TextViewerPage: React.FC = () => {
         <h3 className="text-xl font-bold text-white mb-2">Unable to load this share. Please try again.</h3>
         <p className="text-xs text-zinc-400 mb-6">{errorMessage || 'A network or server error occurred while retrieving this share.'}</p>
         <div className="flex items-center justify-center gap-3">
-          <button
+          <RateLimitedButton
+            cooldownMs={1000}
             onClick={() => fetchContent()}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5 text-black" />
             <span>Try Again</span>
-          </button>
+          </RateLimitedButton>
           <Link
             to="/"
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm"
@@ -318,13 +320,14 @@ export const TextViewerPage: React.FC = () => {
             </p>
           )}
 
-          <button
+          <RateLimitedButton
             type="submit"
+            cooldownMs={1500}
             disabled={unlocking || !password}
             className="w-full py-2.5 rounded-xl font-bold text-sm text-black bg-white hover:bg-zinc-200 disabled:opacity-40 transition-colors shadow-sm cursor-pointer"
           >
             {unlocking ? 'Verifying...' : 'Unlock Content'}
-          </button>
+          </RateLimitedButton>
         </form>
 
         <div className="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-center">
@@ -402,23 +405,25 @@ export const TextViewerPage: React.FC = () => {
         {/* Action Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-4">
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <RateLimitedButton
+              cooldownMs={1000}
               onClick={handleCopy}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-black" /> : <Copy className="w-3.5 h-3.5 text-black" />}
               <span>{copied ? 'Copied' : 'Copy Content'}</span>
-            </button>
+            </RateLimitedButton>
 
             {/* 1-Click Fork / Clone */}
-            <button
+            <RateLimitedButton
+              cooldownMs={1500}
               onClick={handleFork}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
               title="Duplicate content into composer with a fresh timer"
             >
               <GitFork className="w-3.5 h-3.5 text-black" />
               <span>Fork & Edit</span>
-            </button>
+            </RateLimitedButton>
 
             {/* Raw Text link for developers */}
             <a
@@ -434,7 +439,8 @@ export const TextViewerPage: React.FC = () => {
 
             {/* Toggle Line Numbers for Code */}
             {(shareData.metadata.textFormat === 'source_code' || shareData.metadata.textFormat === 'logs') && (
-              <button
+              <RateLimitedButton
+                cooldownMs={300}
                 onClick={() => setShowLineNumbers(!showLineNumbers)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                   showLineNumbers ? 'bg-white text-black' : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700'
@@ -442,27 +448,29 @@ export const TextViewerPage: React.FC = () => {
               >
                 <ListOrdered className="w-3.5 h-3.5" />
                 <span>Lines</span>
-              </button>
+              </RateLimitedButton>
             )}
 
             {shareData.metadata.allowDownload && (
-              <button
+              <RateLimitedButton
+                cooldownMs={1000}
                 onClick={handleDownload}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5 text-black" />
                 <span>Download</span>
-              </button>
+              </RateLimitedButton>
             )}
           </div>
 
-          <button
+          <RateLimitedButton
+            cooldownMs={1000}
             onClick={() => setShowReportDialog(true)}
             className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
           >
             <Flag className="w-3.5 h-3.5" />
             <span>Report Abuse</span>
-          </button>
+          </RateLimitedButton>
         </div>
       </div>
 

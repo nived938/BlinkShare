@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Clock, Volume2, VolumeX } from 'lucide-react';
 import { playExpiryChime } from '../lib/audioAlert';
+import { RateLimitedButton } from './RateLimitedButton';
 
 interface CountdownTimerProps {
   expiresAt: number; // Unix timestamp in seconds
@@ -70,9 +71,10 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
       </span>
 
       {!isExpired && (
-        <button
+        <RateLimitedButton
           type="button"
-          onClick={(e) => {
+          cooldownMs={400}
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             e.stopPropagation();
             setSoundEnabled(!soundEnabled);
             if (!soundEnabled) {
@@ -87,7 +89,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
           ) : (
             <VolumeX className="w-3 h-3 opacity-60 text-current" />
           )}
-        </button>
+        </RateLimitedButton>
       )}
     </div>
   );

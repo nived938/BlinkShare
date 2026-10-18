@@ -15,6 +15,7 @@ import { UserShareItem, PLANS } from '@blinkshare/shared';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api/client';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { RateLimitedButton } from '../components/RateLimitedButton';
 
 export const DashboardPage: React.FC = () => {
   const { user, plan, logout, loading: authLoading } = useAuth();
@@ -108,7 +109,7 @@ export const DashboardPage: React.FC = () => {
               <span>Billing & Plan</span>
             </Link>
 
-            <button
+            <RateLimitedButton
               onClick={() => {
                 logout();
                 navigate('/');
@@ -117,7 +118,7 @@ export const DashboardPage: React.FC = () => {
             >
               <LogOut className="w-4 h-4" />
               <span>Sign Out</span>
-            </button>
+            </RateLimitedButton>
           </div>
         </div>
 
@@ -162,13 +163,13 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <RateLimitedButton
               onClick={loadData}
               className="p-2 text-black bg-white hover:bg-zinc-200 rounded-lg transition-colors shadow-sm cursor-pointer"
               title="Refresh"
             >
               <RefreshCw className="w-4 h-4" />
-            </button>
+            </RateLimitedButton>
             <Link
               to="/"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 shadow-sm transition-colors"
@@ -234,14 +235,14 @@ export const DashboardPage: React.FC = () => {
                       <ExternalLink className="w-4 h-4" />
                     </Link>
 
-                    <button
+                    <RateLimitedButton
                       onClick={() => handleDeleteShare(item.id)}
                       disabled={deletingId === item.id}
                       className="p-2 text-black bg-white hover:bg-zinc-200 rounded-lg transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
                       title="Delete Share Now"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </RateLimitedButton>
                   </div>
                 </div>
               );

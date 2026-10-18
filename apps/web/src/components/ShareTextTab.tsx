@@ -27,6 +27,7 @@ import { api } from '../api/client';
 import { SensitiveTextAlert } from './SensitiveTextAlert';
 import { ExpirationSelector } from './ExpirationSelector';
 import { encryptText } from '../lib/e2ee';
+import { RateLimitedButton } from './RateLimitedButton';
 
 interface ShareTextTabProps {
   onSuccess: (share: CreateShareResult) => void;
@@ -351,22 +352,24 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
         {/* Quick action floating buttons on editor */}
         {!previewMode && (
           <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-zinc-950/90 backdrop-blur-sm p-1 rounded-lg border border-zinc-800 shadow-sm">
-            <button
+            <RateLimitedButton
               type="button"
+              cooldownMs={800}
               onClick={handleCopyContent}
               title="Copy content to clipboard"
               className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-            </button>
-            <button
+            </RateLimitedButton>
+            <RateLimitedButton
               type="button"
+              cooldownMs={800}
               onClick={handleClear}
               title="Clear text"
               className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            </RateLimitedButton>
           </div>
         )}
       </div>
@@ -484,10 +487,11 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
         </div>
       )}
 
-      {/* Create Share Link Button - WHITE BUTTON */}
+      {/* Create Share Link Button - WHITE BUTTON WITH RATE LIMIT */}
       <div className="pt-2">
-        <button
+        <RateLimitedButton
           type="submit"
+          cooldownMs={2000}
           disabled={submitting || isOverLimit || !content.trim()}
           className="w-full py-3.5 px-6 rounded-2xl font-bold text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 text-base cursor-pointer"
         >
@@ -502,7 +506,7 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
               <span>Create {Math.floor(expirationSeconds / 60)}-Minute Share Link</span>
             </>
           )}
-        </button>
+        </RateLimitedButton>
       </div>
     </form>
   );

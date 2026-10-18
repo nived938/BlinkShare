@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api/client';
 import { ExpirationSelector } from './ExpirationSelector';
+import { RateLimitedButton } from './RateLimitedButton';
 
 interface ShareImageTabProps {
   onSuccess: (share: CreateShareResult) => void;
@@ -296,14 +297,15 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
                 />
               )}
               {!isUploading && (
-                <button
+                <RateLimitedButton
                   type="button"
+                  cooldownMs={600}
                   onClick={handleRemove}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-zinc-900/80 hover:bg-white hover:text-black text-white transition-colors"
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-zinc-900/80 hover:bg-white hover:text-black text-white transition-colors cursor-pointer"
                   title="Remove image"
                 >
                   <X className="w-4 h-4" />
-                </button>
+                </RateLimitedButton>
               )}
             </div>
 
@@ -466,10 +468,11 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
         </div>
       )}
 
-      {/* Create Image Link Button - WHITE BUTTON */}
+      {/* Create Image Link Button - WHITE BUTTON WITH RATE LIMIT */}
       <div>
-        <button
+        <RateLimitedButton
           type="button"
+          cooldownMs={2000}
           onClick={handleUploadAndShare}
           disabled={!selectedFile || isUploading || storageInfo?.storageAvailable === false}
           className="w-full py-3.5 px-6 rounded-2xl font-bold text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 text-base cursor-pointer"
@@ -485,7 +488,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
               <span>Create {Math.floor(expirationSeconds / 60)}-Minute Image Link</span>
             </>
           )}
-        </button>
+        </RateLimitedButton>
       </div>
     </div>
   );

@@ -109,19 +109,19 @@ export const PricingPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-full">
-                No Sign-in Needed
+                Guest Free (10 Shares/Day)
               </span>
               <span className="text-2xl font-extrabold text-white">₹0 / $0</span>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">Anonymous Sharing</h3>
+            <h3 className="text-2xl font-bold text-white mb-2">Guest Sharing</h3>
             <p className="text-sm text-zinc-400 mb-6">
-              Drop text, code, or images instantly without creating an account or logging in.
+              Drop text, code, or images as a guest, or sign up for free to unlock 10x more usage.
             </p>
 
             <ul className="space-y-3.5 text-sm text-zinc-300 mb-8">
               <li className="flex items-center gap-2.5">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
-                <span><strong className="text-white">50 shares / day</strong> per visitor</span>
+                <span><strong className="text-white">10 shares / day</strong> guest daily limit</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
@@ -150,7 +150,7 @@ export const PricingPage: React.FC = () => {
             to="/"
             className="w-full py-3.5 px-4 rounded-xl text-center font-bold text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 transition-colors shadow-sm block text-sm"
           >
-            Start Sharing (Anonymous)
+            Start Sharing as Guest
           </Link>
         </div>
 
@@ -175,15 +175,15 @@ export const PricingPage: React.FC = () => {
             <ul className="space-y-3.5 text-sm text-zinc-300 mb-8">
               <li className="flex items-center gap-2.5 font-medium text-white">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
-                <span><strong className="text-white">500 shares / day</strong> daily quota</span>
+                <span><strong className="text-white">100 shares / day</strong> daily quota (10x more usage)</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
-                <span><strong className="text-white">25 MB</strong> max image upload</span>
+                <span><strong className="text-white">15 MB</strong> max image upload</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
-                <span><strong className="text-white">1 MB</strong> max text snippet size</span>
+                <span><strong className="text-white">500 KB</strong> max text snippet size</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
@@ -212,7 +212,7 @@ export const PricingPage: React.FC = () => {
               to="/signup"
               className="w-full py-3.5 px-4 rounded-xl text-center font-bold text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 transition-all shadow-md block text-sm"
             >
-              Create Free Account
+              Sign Up for Free (Get More Usage)
             </Link>
           )}
         </div>
@@ -254,15 +254,23 @@ export const PricingPage: React.FC = () => {
           Ready to experience ephemeral sharing?
         </h2>
         <p className="text-sm text-zinc-400 max-w-xl mx-auto mb-8">
-          No sign up required for instant drops. Paste your notes or drop a screenshot now.
+          Sign up for free to unlock 100 shares/day (10x more usage), live tracking, and higher upload capacity. 100% free forever.
         </p>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-white text-black font-bold text-sm shadow-md hover:bg-zinc-200 transition-transform hover:scale-105 cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-black" />
-          <span>Start Sharing Now</span>
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to="/signup"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-white text-black font-bold text-sm shadow-md hover:bg-zinc-200 transition-transform hover:scale-105 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-black" />
+            <span>Sign Up for Free (More Usage)</span>
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-zinc-900 border border-zinc-700 text-white font-bold text-sm hover:bg-zinc-800 transition-colors cursor-pointer"
+          >
+            <span>Start Sharing Now</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Zap, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { RateLimitedButton } from '../components/RateLimitedButton';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -40,7 +41,7 @@ export const LoginPage: React.FC = () => {
           </Link>
           <h2 className="text-2xl font-bold text-white">Sign in to your account</h2>
           <p className="text-xs text-zinc-400 mt-1">
-            Anonymous sharing is always available without an account.
+            Access your live active shares, history, and 100 shares/day free quota.
           </p>
         </div>
 
@@ -76,19 +77,20 @@ export const LoginPage: React.FC = () => {
             />
           </div>
 
-          <button
+          <RateLimitedButton
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-xs text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 transition-all shadow-md disabled:opacity-50"
+            cooldownMs={1500}
+            className="w-full py-3 rounded-xl font-bold text-xs text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 transition-all shadow-md disabled:opacity-50 cursor-pointer"
           >
             {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+          </RateLimitedButton>
         </form>
 
         <p className="text-center text-xs text-zinc-400 mt-6">
           Don't have an account?{' '}
-          <Link to={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-white font-semibold underline underline-offset-4 hover:text-zinc-300">
-            Create an account
+          <Link to={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-white font-bold underline underline-offset-4 hover:text-zinc-300">
+            Sign up for free (10x More Usage)
           </Link>
         </p>
       </div>

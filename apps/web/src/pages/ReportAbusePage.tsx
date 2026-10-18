@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Flag, CheckCircle, AlertCircle } from 'lucide-react';
 import { api } from '../api/client';
+import { RateLimitedButton } from '../components/RateLimitedButton';
 
 export const ReportAbusePage: React.FC = () => {
   const [shareId, setShareId] = useState('');
@@ -59,7 +60,7 @@ export const ReportAbusePage: React.FC = () => {
             <p className="text-xs text-zinc-400 mb-6 max-w-sm mx-auto">
               Our automated anti-abuse systems have flagged the identifier. Thank you for helping keep BlinkShare secure.
             </p>
-            <button
+            <RateLimitedButton
               onClick={() => {
                 setSubmitted(false);
                 setShareId('');
@@ -68,7 +69,7 @@ export const ReportAbusePage: React.FC = () => {
               className="px-4 py-2 bg-white text-black font-bold rounded-xl text-xs hover:bg-zinc-200 active:bg-zinc-300 shadow-sm transition-colors"
             >
               Submit Another Report
-            </button>
+            </RateLimitedButton>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -124,13 +125,13 @@ export const ReportAbusePage: React.FC = () => {
               </div>
             )}
 
-            <button
+            <RateLimitedButton
               type="submit"
               disabled={submitting}
               className="w-full py-3 rounded-xl font-bold text-xs text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 transition-colors shadow-sm disabled:opacity-50"
             >
               {submitting ? 'Submitting Report...' : 'Submit Abuse Report'}
-            </button>
+            </RateLimitedButton>
           </form>
         )}
       </div>

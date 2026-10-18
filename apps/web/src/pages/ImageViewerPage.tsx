@@ -23,6 +23,7 @@ import { api } from '../api/client';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { ExpiredNotice } from '../components/ExpiredNotice';
 import { ReportAbuseDialog } from '../components/ReportAbuseDialog';
+import { RateLimitedButton } from '../components/RateLimitedButton';
 
 export const ImageViewerPage: React.FC = () => {
   const { shareId } = useParams<{ shareId: string }>();
@@ -168,13 +169,14 @@ export const ImageViewerPage: React.FC = () => {
         <h3 className="text-xl font-bold text-white mb-2">Unable to load this share. Please try again.</h3>
         <p className="text-xs text-zinc-400 mb-6">{errorMessage || 'A network or server error occurred while retrieving this share.'}</p>
         <div className="flex items-center justify-center gap-3">
-          <button
+          <RateLimitedButton
+            cooldownMs={1000}
             onClick={() => fetchMetadata()}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5 text-black" />
             <span>Try Again</span>
-          </button>
+          </RateLimitedButton>
           <Link
             to="/"
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm"
@@ -234,13 +236,14 @@ export const ImageViewerPage: React.FC = () => {
             </p>
           )}
 
-          <button
+          <RateLimitedButton
             type="submit"
+            cooldownMs={1500}
             disabled={unlocking || !password}
             className="w-full py-2.5 rounded-xl font-bold text-sm text-black bg-white hover:bg-zinc-200 disabled:opacity-40 transition-colors shadow-sm cursor-pointer"
           >
             {unlocking ? 'Unlocking...' : 'View Image'}
-          </button>
+          </RateLimitedButton>
         </form>
 
         <div className="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-center">
@@ -304,42 +307,47 @@ export const ImageViewerPage: React.FC = () => {
           {/* Zoom controls & Filters */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
-              <button
+              <RateLimitedButton
+                cooldownMs={300}
                 onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
                 className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
                 title="Zoom out"
               >
                 <ZoomOut className="w-4 h-4" />
-              </button>
+              </RateLimitedButton>
               <span className="text-xs font-mono px-2 text-zinc-300 font-medium">
                 {Math.round(zoomLevel * 100)}%
               </span>
-              <button
+              <RateLimitedButton
+                cooldownMs={300}
                 onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
                 className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
                 title="Zoom in"
               >
                 <ZoomIn className="w-4 h-4" />
-              </button>
-              <button
+              </RateLimitedButton>
+              <RateLimitedButton
+                cooldownMs={300}
                 onClick={() => setZoomLevel(1)}
                 className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
                 title="Reset zoom"
               >
                 <RotateCcw className="w-4 h-4" />
-              </button>
-              <button
+              </RateLimitedButton>
+              <RateLimitedButton
+                cooldownMs={300}
                 onClick={handleFullscreen}
                 className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
                 title="Fullscreen"
               >
                 <Maximize2 className="w-4 h-4" />
-              </button>
+              </RateLimitedButton>
             </div>
 
             {/* Filter mode pill */}
             <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
-              <button
+              <RateLimitedButton
+                cooldownMs={400}
                 onClick={() => {
                   const modes: Array<'normal' | 'invert' | 'contrast' | 'grayscale'> = ['normal', 'invert', 'contrast', 'grayscale'];
                   const next = modes[(modes.indexOf(filterMode) + 1) % modes.length];
@@ -350,30 +358,32 @@ export const ImageViewerPage: React.FC = () => {
               >
                 <Sliders className="w-3.5 h-3.5" />
                 <span className="capitalize">{filterMode}</span>
-              </button>
+              </RateLimitedButton>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <RateLimitedButton
+              cooldownMs={1000}
               onClick={handleCopyLink}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-black" /> : <Copy className="w-3.5 h-3.5 text-black" />}
               <span>{copied ? 'Copied' : 'Copy Link'}</span>
-            </button>
+            </RateLimitedButton>
 
             {/* Native OS Share */}
             {typeof navigator !== 'undefined' && 'share' in navigator && (
-              <button
+              <RateLimitedButton
+                cooldownMs={1000}
                 onClick={handleNativeShare}
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 shadow-sm cursor-pointer"
                 title="Share via device sheet"
               >
                 <Share2 className="w-3.5 h-3.5 text-black" />
                 <span>Share</span>
-              </button>
+              </RateLimitedButton>
             )}
 
             {/* WhatsApp */}
@@ -398,13 +408,14 @@ export const ImageViewerPage: React.FC = () => {
               </a>
             )}
 
-            <button
+            <RateLimitedButton
+              cooldownMs={1000}
               onClick={() => setShowReportDialog(true)}
               className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
               title="Report Abuse"
             >
               <Flag className="w-4 h-4" />
-            </button>
+            </RateLimitedButton>
           </div>
         </div>
       </div>

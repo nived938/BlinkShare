@@ -69,12 +69,21 @@ export const Header: React.FC = () => {
                 </span>
               </Link>
             ) : (
-              <Link
-                to="/login"
-                className="text-sm font-medium text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-zinc-900 transition-colors"
-              >
-                Sign In
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-zinc-900 transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                  <span>Sign Up Free (More Usage)</span>
+                </Link>
+              </div>
             )}
 
             <Link
@@ -128,13 +137,22 @@ export const Header: React.FC = () => {
                 </span>
               </Link>
             ) : (
-              <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-center py-2 rounded-lg text-zinc-300 font-medium hover:bg-zinc-900"
-              >
-                Sign In
-              </Link>
+              <div className="flex flex-col gap-2">
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-center py-2.5 rounded-xl font-bold text-xs text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-700"
+                >
+                  Sign Up for Free (10x More Usage)
+                </Link>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-center py-2 rounded-lg text-zinc-300 font-medium hover:bg-zinc-900 text-sm"
+                >
+                  Sign In
+                </Link>
+              </div>
             )}
             <Link
               to="/"

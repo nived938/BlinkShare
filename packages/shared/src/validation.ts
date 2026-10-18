@@ -35,6 +35,8 @@ export const createTextShareSchema = z.object({
   burnAfterRead: z.boolean().default(false).optional(),
   allowDownload: z.boolean().default(true).optional(),
   customAlias: z.string().regex(/^[a-zA-Z0-9_-]{3,32}$/, 'Alias must be 3-32 alphanumeric characters').optional().or(z.literal('')),
+  expirationSeconds: z.number().int().min(60, 'Expiration must be at least 60 seconds (1 minute)').max(300, 'Expiration cannot exceed 300 seconds (5 minutes)').default(300).optional(),
+  isEncrypted: z.boolean().default(false).optional(),
 });
 
 export const initImageUploadSchema = z.object({
@@ -47,6 +49,7 @@ export const initImageUploadSchema = z.object({
   burnAfterRead: z.boolean().default(false).optional(),
   allowDownload: z.boolean().default(true).optional(),
   customAlias: z.string().regex(/^[a-zA-Z0-9_-]{3,32}$/, 'Alias must be 3-32 alphanumeric characters').optional().or(z.literal('')),
+  expirationSeconds: z.number().int().min(60, 'Expiration must be at least 60 seconds (1 minute)').max(300, 'Expiration cannot exceed 300 seconds (5 minutes)').default(300).optional(),
 });
 
 export const unlockShareSchema = z.object({

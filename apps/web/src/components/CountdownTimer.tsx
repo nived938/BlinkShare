@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Clock } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Clock, Volume2, VolumeX } from 'lucide-react';
+import { playExpiryChime } from '../lib/audioAlert';
 
 interface CountdownTimerProps {
   expiresAt: number; // Unix timestamp in seconds
   onExpired?: () => void;
   showIcon?: boolean;
+  enableAudioChime?: boolean;
   className?: string;
 }
 
@@ -12,6 +14,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   expiresAt,
   onExpired,
   showIcon = true,
+  enableAudioChime = false,
   className = '',
 }) => {
   const calculateRemaining = () => {
@@ -20,11 +23,20 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   };
 
   const [remaining, setRemaining] = useState<number>(calculateRemaining);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(enableAudioChime);
+  const chimePlayedRef = useRef<boolean>(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const left = calculateRemaining();
       setRemaining(left);
+
+      // Play soft chime alert once when 30 seconds remain
+      if (left === 30 && soundEnabled && !chimePlayedRef.current) {
+        chimePlayedRef.current = true;
+        playExpiryChime();
+      }
+
       if (left <= 0) {
         clearInterval(interval);
         onExpired?.();
@@ -32,7 +44,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [expiresAt, onExpired]);
+  }, [expiresAt, onExpired, soundEnabled]);
 
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
@@ -56,6 +68,27 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
       <span>
         {isExpired ? 'Expired' : `Expires in ${formattedTime}`}
       </span>
+
+      {!isExpired && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSoundEnabled(!soundEnabled);
+            if (!soundEnabled) {
+              playExpiryChime();
+            }
+          }}
+          className="p-0.5 hover:opacity-80 rounded cursor-pointer transition-opacity"
+          title={soundEnabled ? 'Expiry sound alarm active (chimes at 30s)' : 'Enable 30s audio chime alarm'}
+        >
+          {soundEnabled ? (
+            <Volume2 className="w-3 h-3 text-current" />
+          ) : (
+            <VolumeX className="w-3 h-3 opacity-60 text-current" />
+          )}
+        </button>
+      )}
     </div>
   );
 };

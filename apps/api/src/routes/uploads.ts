@@ -74,13 +74,14 @@ uploadsRouter.put('/:token', async (c) => {
   }
 });
 
-// POST /api/uploads/:token/finalize - Finalize upload and create public 5-minute share
+// POST /api/uploads/:token/finalize - Finalize upload and create public share
 uploadsRouter.post('/:token/finalize', async (c) => {
   const token = c.req.param('token');
+  const body = await c.req.json().catch(() => ({}));
   const shareService = new ShareService(c.env);
 
   try {
-    const result = await shareService.finalizeImageUpload(token);
+    const result = await shareService.finalizeImageUpload(token, body?.expirationSeconds);
     return c.json(result, 201);
   } catch (err: any) {
     const status = err.status || 400;

@@ -14,6 +14,9 @@ import {
   Flame,
   AlertCircle,
   ArrowLeft,
+  Share2,
+  MessageCircle,
+  Sliders,
 } from 'lucide-react';
 import { ShareMetadata } from '@blinkshare/shared';
 import { api } from '../api/client';
@@ -39,6 +42,8 @@ export const ImageViewerPage: React.FC = () => {
 
   // Zoom and viewer controls
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [filterMode, setFilterMode] = useState<'normal' | 'invert' | 'contrast' | 'grayscale'>('normal');
+  const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
   const [copied, setCopied] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,7 +60,7 @@ export const ImageViewerPage: React.FC = () => {
     try {
       const res = await api.getShare(shareId.trim());
       setMetadata(res.metadata);
-      setIsPasswordRequired(Boolean(res.isPasswordRequired));
+      setIsPasswordRequired(!!res.isPasswordRequired);
       if (res.metadata?.isExpired) {
         setIsExpired(true);
       }
@@ -66,7 +71,7 @@ export const ImageViewerPage: React.FC = () => {
         setErrorType('not_found');
       } else {
         setErrorType('error');
-        setErrorMessage(err.message || 'Unable to load this share. Please try again.');
+        setErrorMessage(err.message || 'Unable to load image. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -83,12 +88,11 @@ export const ImageViewerPage: React.FC = () => {
     setUnlocking(true);
     setPasswordError(null);
     try {
-      // Test password by unlocking share
-      await api.unlockShare(shareId, password);
+      await api.unlockShare(shareId.trim(), password);
       setUnlockedPassword(password);
       setIsPasswordRequired(false);
     } catch (err: any) {
-      setPasswordError(err.message || 'Incorrect password');
+      setPasswordError(err.message || 'Invalid password');
     } finally {
       setUnlocking(false);
     }
@@ -103,23 +107,42 @@ export const ImageViewerPage: React.FC = () => {
   };
 
   const handleFullscreen = () => {
-    if (containerRef.current) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        containerRef.current.requestFullscreen().catch(() => {});
-      }
+    if (!containerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      containerRef.current.requestFullscreen().catch(() => {});
     }
   };
 
-  // Build the streaming image URL
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: metadata?.originalFilename || 'Ephemeral Image on BlinkShare',
+          text: 'Open this confidential image before it expires:',
+          url: window.location.href,
+        });
+      } catch {}
+    } else {
+      handleCopyLink();
+    }
+  };
+
   const imageUrl = shareId
-    ? `/api/shares/${shareId}/image${unlockedPassword ? `?password=${encodeURIComponent(unlockedPassword)}` : ''}`
+    ? api.getImageStreamUrl(shareId, unlockedPassword || undefined)
     : '';
 
   const downloadUrl = shareId
-    ? `/api/shares/${shareId}/image?download=true${unlockedPassword ? `&password=${encodeURIComponent(unlockedPassword)}` : ''}`
+    ? api.getImageDownloadUrl(shareId, unlockedPassword || undefined)
     : '';
+
+  const filterStyle = {
+    normal: '',
+    invert: 'invert(1) hue-rotate(180deg)',
+    contrast: 'contrast(1.4) brightness(1.1)',
+    grayscale: 'grayscale(1)',
+  }[filterMode];
 
   if (loading) {
     return (
@@ -171,7 +194,7 @@ export const ImageViewerPage: React.FC = () => {
           <AlertCircle className="w-6 h-6" />
         </div>
         <h3 className="text-xl font-bold text-white mb-2">This share could not be found.</h3>
-        <p className="text-xs text-zinc-400 mb-6">The requested link does not exist, was mistyped, or has already been removed.</p>
+        <p className="text-xs text-zinc-400 mb-6">The requested link does not exist, was mistyped, or has already expired and been wiped.</p>
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm"
@@ -224,6 +247,7 @@ export const ImageViewerPage: React.FC = () => {
           <CountdownTimer
             expiresAt={metadata.expiresAt}
             onExpired={() => setIsExpired(true)}
+            enableAudioChime={true}
           />
         </div>
       </div>
@@ -236,13 +260,18 @@ export const ImageViewerPage: React.FC = () => {
       <div className="bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-xs font-bold uppercase tracking-wider text-black bg-white px-2 py-0.5 rounded-md">
                 Image Share
               </span>
               {metadata.fileSize && (
                 <span className="text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md">
                   {(metadata.fileSize / (1024 * 1024)).toFixed(2)} MB
+                </span>
+              )}
+              {imageSize && (
+                <span className="text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md">
+                  {imageSize.width} × {imageSize.height} px
                 </span>
               )}
             </div>
@@ -255,6 +284,7 @@ export const ImageViewerPage: React.FC = () => {
             <CountdownTimer
               expiresAt={metadata.expiresAt}
               onExpired={() => setIsExpired(true)}
+              enableAudioChime={true}
             />
           </div>
         </div>
@@ -271,43 +301,61 @@ export const ImageViewerPage: React.FC = () => {
 
         {/* Action & Zoom Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
-          {/* Zoom controls */}
-          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
-            <button
-              onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
-              className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
-              title="Zoom out"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-mono px-2 text-zinc-300 font-medium">
-              {Math.round(zoomLevel * 100)}%
-            </span>
-            <button
-              onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
-              className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
-              title="Zoom in"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setZoomLevel(1)}
-              className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
-              title="Reset zoom"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleFullscreen}
-              className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
-              title="Fullscreen"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
+          {/* Zoom controls & Filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
+              <button
+                onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                title="Zoom out"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-mono px-2 text-zinc-300 font-medium">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                title="Zoom in"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setZoomLevel(1)}
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                title="Reset zoom"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleFullscreen}
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                title="Fullscreen"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filter mode pill */}
+            <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
+              <button
+                onClick={() => {
+                  const modes: Array<'normal' | 'invert' | 'contrast' | 'grayscale'> = ['normal', 'invert', 'contrast', 'grayscale'];
+                  const next = modes[(modes.indexOf(filterMode) + 1) % modes.length];
+                  setFilterMode(next);
+                }}
+                className="px-2.5 py-1 text-xs font-bold text-zinc-300 hover:text-white flex items-center gap-1.5 cursor-pointer"
+                title="Cycle filter"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span className="capitalize">{filterMode}</span>
+              </button>
+            </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleCopyLink}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
@@ -316,6 +364,29 @@ export const ImageViewerPage: React.FC = () => {
               <span>{copied ? 'Copied' : 'Copy Link'}</span>
             </button>
 
+            {/* Native OS Share */}
+            {typeof navigator !== 'undefined' && 'share' in navigator && (
+              <button
+                onClick={handleNativeShare}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 shadow-sm cursor-pointer"
+                title="Share via device sheet"
+              >
+                <Share2 className="w-3.5 h-3.5 text-black" />
+                <span>Share</span>
+              </button>
+            )}
+
+            {/* WhatsApp */}
+            <a
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Confidential BlinkShare image (expires soon): ${window.location.href}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="p-1.5 rounded-xl text-black bg-white hover:bg-zinc-200 shadow-sm transition-colors"
+              title="Share on WhatsApp"
+            >
+              <MessageCircle className="w-4 h-4 text-black" />
+            </a>
+
             {metadata.allowDownload && (
               <a
                 href={downloadUrl}
@@ -323,7 +394,7 @@ export const ImageViewerPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 shadow-sm transition-colors"
               >
                 <Download className="w-3.5 h-3.5 text-black" />
-                <span>Download Image</span>
+                <span>Download</span>
               </a>
             )}
 
@@ -346,8 +417,16 @@ export const ImageViewerPage: React.FC = () => {
         <img
           src={imageUrl}
           alt={metadata.originalFilename || 'Shared visual'}
-          style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center' }}
+          style={{
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: 'center',
+            filter: filterStyle,
+          }}
           className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-lg transition-transform duration-150"
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+          }}
           onError={() => setIsExpired(true)}
         />
       </div>
@@ -355,7 +434,7 @@ export const ImageViewerPage: React.FC = () => {
       {/* Footer Disclaimer */}
       <div className="text-center text-xs text-zinc-500 mt-6 flex items-center justify-center gap-1.5">
         <Clock className="w-3.5 h-3.5" />
-        <span>Streamed directly from Cloudflare Workers KV storage. Permanently destroyed in 5 minutes.</span>
+        <span>Streamed directly from Cloudflare Workers KV. Wiped automatically when countdown expires.</span>
       </div>
 
       {/* Report Abuse Modal */}

@@ -2,6 +2,8 @@ import {
   CreateTextSharePayload,
   CreateShareResult,
   EXPIRATION_SECONDS,
+  MIN_EXPIRATION_SECONDS,
+  MAX_EXPIRATION_SECONDS,
   FREE_TIER_LIMITS,
   InitImageUploadPayload,
   InitImageUploadResult,
@@ -66,7 +68,11 @@ export class ShareService {
     }
 
     const now = getCurrentTimestamp(this.env);
-    const expiresAt = now + EXPIRATION_SECONDS; // Fixed strictly to 300 seconds (5 min)
+    const duration = Math.min(
+      MAX_EXPIRATION_SECONDS,
+      Math.max(MIN_EXPIRATION_SECONDS, payload.expirationSeconds || EXPIRATION_SECONDS)
+    );
+    const expiresAt = now + duration;
 
     const rawDeletionToken = generateDeletionToken();
     const deletionTokenHash = await sha256Hex(rawDeletionToken);
@@ -287,7 +293,7 @@ export class ShareService {
     await this.storage.uploadImage(storageKey, stream, session.file_mime_type, session.file_size);
   }
 
-  async finalizeImageUpload(uploadToken: string): Promise<FinalizeImageUploadResult> {
+  async finalizeImageUpload(uploadToken: string, requestedDuration?: number): Promise<FinalizeImageUploadResult> {
     const session = await this.repo.getUploadSession(uploadToken);
     const now = getCurrentTimestamp(this.env);
 
@@ -313,7 +319,11 @@ export class ShareService {
     }
 
     const shareId = session.custom_alias || generateSecureId(10);
-    const expiresAt = now + EXPIRATION_SECONDS; // Fixed strictly to 300 seconds (5 min)
+    const duration = Math.min(
+      MAX_EXPIRATION_SECONDS,
+      Math.max(MIN_EXPIRATION_SECONDS, requestedDuration || (session as any).duration_seconds || EXPIRATION_SECONDS)
+    );
+    const expiresAt = now + duration;
     const rawDeletionToken = generateDeletionToken();
     const deletionTokenHash = await sha256Hex(rawDeletionToken);
 

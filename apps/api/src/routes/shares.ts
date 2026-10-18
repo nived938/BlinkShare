@@ -100,6 +100,32 @@ sharesRouter.get('/:id/content', async (c) => {
   }
 });
 
+// GET /api/shares/:id/raw - Developer Raw Plaintext Endpoint
+sharesRouter.get('/:id/raw', async (c) => {
+  const id = c.req.param('id');
+  const password = c.req.query('password');
+  const shareService = new ShareService(c.env);
+
+  try {
+    const shareContent = await shareService.getShareContent(id, password);
+    if (shareContent.isPasswordRequired) {
+      return c.text('Error: Share is password-protected. Provide ?password=...\n', 401);
+    }
+    if (shareContent.metadata.contentType !== 'text') {
+      return c.text('Error: Share is an image, not a text snippet\n', 400);
+    }
+    return new Response(shareContent.textContent || '', {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+      },
+    });
+  } catch (err: any) {
+    const status = err.status || 500;
+    return c.text(err.message || 'Share unavailable\n', status);
+  }
+});
+
 // POST /api/shares/:id/unlock - Unlock password-protected text share
 sharesRouter.post('/:id/unlock', async (c) => {
   const id = c.req.param('id');

@@ -1,4 +1,7 @@
-export const EXPIRATION_SECONDS = 300; // Strictly 5 minutes (300 seconds)
+export const MIN_EXPIRATION_SECONDS = 60; // 1 minute
+export const MAX_EXPIRATION_SECONDS = 300; // 5 minutes
+export const DEFAULT_EXPIRATION_SECONDS = 300; // Default 5 minutes
+export const EXPIRATION_SECONDS = 300; // Backward compatibility
 
 export type ShareContentType = 'text' | 'image';
 
@@ -29,7 +32,9 @@ export interface PlanLimits {
   maxTextBytes: number;
   maxImageBytes: number;
   maxSharesPerDay: number;
-  expirationSeconds: number; // Always 300
+  minExpirationSeconds: number; // 60s (1 min)
+  maxExpirationSeconds: number; // 300s (5 min)
+  expirationSeconds: number; // default 300
   qrCode: boolean;
   codeHighlighting: boolean;
   passwordProtection: boolean;
@@ -40,13 +45,15 @@ export interface PlanLimits {
   batchImageSharing: boolean;
   customShareAlias: boolean;
   promotionalBanners: boolean;
+  clientSideEncryption: boolean;
+  rawViewEndpoint: boolean;
 }
 
 export interface ShareMetadata {
   id: string;
   contentType: ShareContentType;
   createdAt: number; // Unix timestamp in seconds
-  expiresAt: number; // Unix timestamp in seconds (strictly createdAt + 300)
+  expiresAt: number; // Unix timestamp in seconds (between createdAt + 60 and createdAt + 300)
   title?: string | null;
   textFormat?: TextFormat | null;
   syntaxLanguage?: SyntaxLanguage | null;
@@ -56,6 +63,7 @@ export interface ShareMetadata {
   hasPassword?: boolean;
   burnAfterRead?: boolean;
   allowDownload?: boolean;
+  isEncrypted?: boolean;
   viewCount?: number;
   isExpired: boolean;
   secondsRemaining: number;
@@ -77,6 +85,8 @@ export interface CreateTextSharePayload {
   burnAfterRead?: boolean;
   allowDownload?: boolean;
   customAlias?: string;
+  expirationSeconds?: number; // 60 to 300 seconds
+  isEncrypted?: boolean;
 }
 
 export interface CreateShareResult {
@@ -96,6 +106,7 @@ export interface InitImageUploadPayload {
   burnAfterRead?: boolean;
   allowDownload?: boolean;
   customAlias?: string;
+  expirationSeconds?: number; // 60 to 300 seconds
 }
 
 export interface InitImageUploadResult {

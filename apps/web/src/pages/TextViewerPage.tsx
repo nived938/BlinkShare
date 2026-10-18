@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import Prism from 'prismjs';
@@ -26,21 +26,35 @@ import {
   Clock,
   ArrowLeft,
   RotateCcw,
+  GitFork,
+  FileCode,
+  ShieldCheck,
+  ListOrdered,
 } from 'lucide-react';
 import { ShareContentResponse } from '@blinkshare/shared';
 import { api } from '../api/client';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { ExpiredNotice } from '../components/ExpiredNotice';
 import { ReportAbuseDialog } from '../components/ReportAbuseDialog';
+import { decryptText } from '../lib/e2ee';
 
 export const TextViewerPage: React.FC = () => {
   const { shareId } = useParams<{ shareId: string }>();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [errorType, setErrorType] = useState<'not_found' | 'error' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isExpired, setIsExpired] = useState(false);
   const [shareData, setShareData] = useState<ShareContentResponse | null>(null);
+
+  // E2EE state
+  const [decryptedText, setDecryptedText] = useState<string | null>(null);
+  const [isE2EEDecrypted, setIsE2EEDecrypted] = useState<boolean>(false);
+  const [e2eeError, setE2eeError] = useState<string | null>(null);
+
+  // Line numbers toggle
+  const [showLineNumbers, setShowLineNumbers] = useState<boolean>(false);
 
   // Password state
   const [password, setPassword] = useState('');
@@ -89,6 +103,29 @@ export const TextViewerPage: React.FC = () => {
     fetchContent();
   }, [shareId]);
 
+  // Handle client-side E2EE decryption from URL hash
+  useEffect(() => {
+    if (!shareData?.textContent) return;
+
+    const hash = window.location.hash;
+    if (hash.includes('key=')) {
+      const keyB64 = hash.split('key=')[1]?.split('&')[0];
+      if (keyB64) {
+        decryptText(shareData.textContent, keyB64)
+          .then((decrypted) => {
+            setDecryptedText(decrypted);
+            setIsE2EEDecrypted(true);
+          })
+          .catch((err) => {
+            console.error('Decryption failed', err);
+            setE2eeError('Failed to decrypt: key invalid or corrupted');
+          });
+      }
+    }
+  }, [shareData?.textContent]);
+
+  const activeContent = decryptedText || shareData?.textContent || '';
+
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shareId || !password) return;
@@ -98,23 +135,23 @@ export const TextViewerPage: React.FC = () => {
       const res = await api.unlockShare(shareId.trim(), password);
       setShareData(res);
     } catch (err: any) {
-      setPasswordError(err.message || 'Incorrect password');
+      setPasswordError(err.message || 'Invalid password');
     } finally {
       setUnlocking(false);
     }
   };
 
   const handleCopy = async () => {
-    if (!shareData?.textContent) return;
+    if (!activeContent) return;
     try {
-      await navigator.clipboard.writeText(shareData.textContent);
+      await navigator.clipboard.writeText(activeContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {}
   };
 
   const handleDownload = () => {
-    if (!shareData?.textContent) return;
+    if (!activeContent || !shareData) return;
     const format = shareData.metadata.textFormat;
     let ext = 'txt';
     let mime = 'text/plain';
@@ -126,18 +163,24 @@ export const TextViewerPage: React.FC = () => {
       ext = 'json';
       mime = 'application/json';
     } else if (format === 'source_code') {
-      const lang = shareData.metadata.syntaxLanguage;
-      if (lang === 'javascript') ext = 'js';
-      else if (lang === 'typescript') ext = 'ts';
-      else if (lang === 'python') ext = 'py';
-      else if (lang === 'html') ext = 'html';
-      else if (lang === 'css') ext = 'css';
-      else if (lang === 'sql') ext = 'sql';
-      else if (lang === 'bash') ext = 'sh';
-      else if (lang === 'powershell') ext = 'ps1';
+      const lang = shareData.metadata.syntaxLanguage || 'txt';
+      const extMap: Record<string, string> = {
+        javascript: 'js',
+        typescript: 'ts',
+        python: 'py',
+        html: 'html',
+        css: 'css',
+        sql: 'sql',
+        bash: 'sh',
+        powershell: 'ps1',
+        rust: 'rs',
+        go: 'go',
+        yaml: 'yaml',
+      };
+      ext = extMap[lang] || 'txt';
     }
 
-    const blob = new Blob([shareData.textContent], { type: `${mime};charset=utf-8` });
+    const blob = new Blob([activeContent], { type: `${mime};charset=utf-8` });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -146,22 +189,44 @@ export const TextViewerPage: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  // 1-Click Fork / Clone share to homepage
+  const handleFork = () => {
+    if (!activeContent) return;
+    sessionStorage.setItem('blinkshare_fork_content', activeContent);
+    if (shareData?.metadata.title) {
+      sessionStorage.setItem('blinkshare_fork_title', shareData.metadata.title);
+    }
+    if (shareData?.metadata.textFormat) {
+      sessionStorage.setItem('blinkshare_fork_format', shareData.metadata.textFormat);
+    }
+    navigate('/');
+  };
+
+  // Text Stats
+  const stats = useMemo(() => {
+    const chars = activeContent.length;
+    const words = activeContent.trim() ? activeContent.trim().split(/\s+/).length : 0;
+    const lines = activeContent ? activeContent.split('\n').length : 0;
+    const readingTime = Math.max(1, Math.ceil(words / 200));
+    return { chars, words, lines, readingTime };
+  }, [activeContent]);
+
   // Render markdown safely
   const renderedMarkdown = useMemo(() => {
-    if (shareData?.metadata.textFormat !== 'markdown' || !shareData.textContent) {
+    if (shareData?.metadata.textFormat !== 'markdown' || !activeContent) {
       return '';
     }
-    const rawHtml = marked.parse(shareData.textContent, { async: false }) as string;
+    const rawHtml = marked.parse(activeContent, { async: false }) as string;
     return DOMPurify.sanitize(rawHtml);
-  }, [shareData]);
+  }, [shareData, activeContent]);
 
   // Syntax highlighting for code
   const highlightedCode = useMemo(() => {
-    if (!shareData?.textContent) return '';
-    const lang = shareData.metadata.syntaxLanguage || 'plaintext';
+    if (!activeContent) return '';
+    const lang = shareData?.metadata.syntaxLanguage || 'plaintext';
     const grammar = Prism.languages[lang] || Prism.languages.plaintext;
-    return Prism.highlight(shareData.textContent, grammar, lang);
-  }, [shareData]);
+    return Prism.highlight(activeContent, grammar, lang);
+  }, [shareData, activeContent]);
 
   if (loading) {
     return (
@@ -213,7 +278,7 @@ export const TextViewerPage: React.FC = () => {
           <AlertCircle className="w-6 h-6" />
         </div>
         <h3 className="text-xl font-bold text-white mb-2">This share could not be found.</h3>
-        <p className="text-xs text-zinc-400 mb-6">The requested link does not exist, was mistyped, or has already been removed.</p>
+        <p className="text-xs text-zinc-400 mb-6">The requested link does not exist, was mistyped, or has already expired and been wiped.</p>
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm"
@@ -266,6 +331,7 @@ export const TextViewerPage: React.FC = () => {
           <CountdownTimer
             expiresAt={shareData.metadata.expiresAt}
             onExpired={() => setIsExpired(true)}
+            enableAudioChime={true}
           />
         </div>
       </div>
@@ -278,7 +344,7 @@ export const TextViewerPage: React.FC = () => {
       <div className="bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-xs font-bold uppercase tracking-wider text-black bg-white px-2 py-0.5 rounded-md">
                 {shareData.metadata.textFormat?.replace('_', ' ')}
               </span>
@@ -287,16 +353,30 @@ export const TextViewerPage: React.FC = () => {
                   {shareData.metadata.syntaxLanguage}
                 </span>
               )}
+              {isE2EEDecrypted && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded-md">
+                  <ShieldCheck className="w-3 h-3 text-white" />
+                  <span>Zero-Knowledge E2EE</span>
+                </span>
+              )}
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               {shareData.metadata.title || 'Untitled Share'}
             </h1>
+            <div className="flex items-center gap-3 text-xs text-zinc-400 mt-1">
+              <span>{stats.words.toLocaleString()} words</span>
+              <span>•</span>
+              <span>{stats.chars.toLocaleString()} chars</span>
+              <span>•</span>
+              <span>~{stats.readingTime} min read</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <CountdownTimer
               expiresAt={shareData.metadata.expiresAt}
               onExpired={() => setIsExpired(true)}
+              enableAudioChime={true}
             />
           </div>
         </div>
@@ -311,9 +391,17 @@ export const TextViewerPage: React.FC = () => {
           </div>
         )}
 
+        {/* E2EE Decryption Error if key missing */}
+        {e2eeError && (
+          <div className="mt-4 p-3 rounded-xl bg-zinc-900 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{e2eeError}</span>
+          </div>
+        )}
+
         {/* Action Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleCopy}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
@@ -322,20 +410,55 @@ export const TextViewerPage: React.FC = () => {
               <span>{copied ? 'Copied' : 'Copy Content'}</span>
             </button>
 
+            {/* 1-Click Fork / Clone */}
+            <button
+              onClick={handleFork}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
+              title="Duplicate content into composer with a fresh timer"
+            >
+              <GitFork className="w-3.5 h-3.5 text-black" />
+              <span>Fork & Edit</span>
+            </button>
+
+            {/* Raw Text link for developers */}
+            <a
+              href={`/api/shares/${shareId}/raw`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
+              title="View or curl raw text snippet"
+            >
+              <FileCode className="w-3.5 h-3.5 text-black" />
+              <span>Raw</span>
+            </a>
+
+            {/* Toggle Line Numbers for Code */}
+            {(shareData.metadata.textFormat === 'source_code' || shareData.metadata.textFormat === 'logs') && (
+              <button
+                onClick={() => setShowLineNumbers(!showLineNumbers)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                  showLineNumbers ? 'bg-white text-black' : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700'
+                }`}
+              >
+                <ListOrdered className="w-3.5 h-3.5" />
+                <span>Lines</span>
+              </button>
+            )}
+
             {shareData.metadata.allowDownload && (
               <button
                 onClick={handleDownload}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5 text-black" />
-                <span>Download File</span>
+                <span>Download</span>
               </button>
             )}
           </div>
 
           <button
             onClick={() => setShowReportDialog(true)}
-            className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
           >
             <Flag className="w-3.5 h-3.5" />
             <span>Report Abuse</span>
@@ -351,20 +474,42 @@ export const TextViewerPage: React.FC = () => {
             dangerouslySetInnerHTML={{ __html: renderedMarkdown }}
           />
         ) : shareData.metadata.textFormat === 'source_code' ? (
-          <pre className="overflow-x-auto rounded-2xl bg-zinc-900 p-4 border border-zinc-800 font-mono text-xs sm:text-sm">
-            <code dangerouslySetInnerHTML={{ __html: highlightedCode }} />
-          </pre>
+          <div className="relative rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+            <div className="flex">
+              {showLineNumbers && (
+                <div className="select-none text-zinc-600 font-mono text-xs sm:text-sm p-4 text-right border-r border-zinc-800 bg-zinc-950/40">
+                  {activeContent.split('\n').map((_, i) => (
+                    <div key={i}>{i + 1}</div>
+                  ))}
+                </div>
+              )}
+              <pre className="flex-1 overflow-x-auto p-4 font-mono text-xs sm:text-sm m-0">
+                <code dangerouslySetInnerHTML={{ __html: highlightedCode }} />
+              </pre>
+            </div>
+          </div>
         ) : (
-          <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm text-zinc-100 leading-relaxed break-words bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
-            {shareData.textContent}
-          </pre>
+          <div className="relative rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+            <div className="flex">
+              {showLineNumbers && (
+                <div className="select-none text-zinc-600 font-mono text-xs sm:text-sm p-4 text-right border-r border-zinc-800 bg-zinc-950/40">
+                  {activeContent.split('\n').map((_, i) => (
+                    <div key={i}>{i + 1}</div>
+                  ))}
+                </div>
+              )}
+              <pre className="flex-1 whitespace-pre-wrap font-mono text-xs sm:text-sm text-zinc-100 leading-relaxed break-words p-4 m-0">
+                {activeContent}
+              </pre>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Expiration disclaimer */}
       <div className="text-center text-xs text-zinc-400 mt-6 flex items-center justify-center gap-1.5">
         <Clock className="w-3.5 h-3.5" />
-        <span>This shared text is automatically deleted from Cloudflare storage after 5 minutes.</span>
+        <span>This shared snippet is automatically deleted from Cloudflare storage upon timer expiration.</span>
       </div>
 
       {/* Report abuse modal */}

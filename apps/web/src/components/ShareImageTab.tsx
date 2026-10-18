@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api/client';
+import { ExpirationSelector } from './ExpirationSelector';
 
 interface ShareImageTabProps {
   onSuccess: (share: CreateShareResult) => void;
@@ -37,6 +38,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
   const [isDragging, setIsDragging] = useState(false);
 
   // Settings
+  const [expirationSeconds, setExpirationSeconds] = useState<number>(300);
   const [password, setPassword] = useState('');
   const [burnAfterRead, setBurnAfterRead] = useState(false);
   const [allowDownload, setAllowDownload] = useState(true);
@@ -179,6 +181,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
         burnAfterRead,
         allowDownload,
         customAlias: customAlias.trim() || undefined,
+        expirationSeconds,
       });
 
       // Step 2: Upload binary stream directly to upload endpoint
@@ -189,8 +192,8 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
         abortController.signal
       );
 
-      // Step 3: Finalize upload session and receive public 5-minute share link
-      const finalizeResult = await api.finalizeImageUpload(initResult.uploadToken);
+      // Step 3: Finalize upload session and receive public share link
+      const finalizeResult = await api.finalizeImageUpload(initResult.uploadToken, expirationSeconds);
 
       onSuccess(finalizeResult);
     } catch (err: any) {
@@ -369,6 +372,12 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
         </div>
       )}
 
+      {/* Configurable Expiration Selector (1 to 5 Minutes) */}
+      <ExpirationSelector
+        value={expirationSeconds}
+        onChange={setExpirationSeconds}
+      />
+
       {/* Advanced Options Bar (Password, Burn, Download, Custom Alias) */}
       <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Password */}
@@ -473,7 +482,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
           ) : (
             <>
               <Sparkles className="w-5 h-5 text-black" />
-              <span>Create Image Link</span>
+              <span>Create {Math.floor(expirationSeconds / 60)}-Minute Image Link</span>
             </>
           )}
         </button>

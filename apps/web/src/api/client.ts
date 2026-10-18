@@ -80,6 +80,20 @@ export const api = {
     return request<ShareContentResponse>(url);
   },
 
+  getImageStreamUrl: (id: string, password?: string) => {
+    const params = new URLSearchParams();
+    if (password) params.set('password', password);
+    const qs = params.toString();
+    return `${API_BASE}/shares/${id}/image${qs ? `?${qs}` : ''}`;
+  },
+
+  getImageDownloadUrl: (id: string, password?: string) => {
+    const params = new URLSearchParams();
+    if (password) params.set('password', password);
+    params.set('download', 'true');
+    return `${API_BASE}/shares/${id}/image?${params.toString()}`;
+  },
+
   unlockShare: (id: string, password: string) =>
     request<ShareContentResponse>(`/shares/${id}/unlock`, {
       method: 'POST',
@@ -149,9 +163,10 @@ export const api = {
     });
   },
 
-  finalizeImageUpload: (uploadToken: string) =>
+  finalizeImageUpload: (uploadToken: string, expirationSeconds?: number) =>
     request<FinalizeImageUploadResult>(`/uploads/${uploadToken}/finalize`, {
       method: 'POST',
+      body: JSON.stringify({ expirationSeconds }),
     }),
 
   // Plans & Usage

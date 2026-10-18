@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   TextFormat,
   SyntaxLanguage,
@@ -10,17 +10,23 @@ import {
   Trash2,
   Lock,
   Flame,
-  Download,
   Link as LinkIcon,
   Sparkles,
   FileText,
   Code,
   Check,
   AlertCircle,
+  Eye,
+  Edit3,
+  KeyRound,
 } from 'lucide-react';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api/client';
 import { SensitiveTextAlert } from './SensitiveTextAlert';
+import { ExpirationSelector } from './ExpirationSelector';
+import { encryptText } from '../lib/e2ee';
 
 interface ShareTextTabProps {
   onSuccess: (share: CreateShareResult) => void;
@@ -34,20 +40,79 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
   const [content, setContent] = useState('');
   const [format, setFormat] = useState<TextFormat>('plain_text');
   const [language, setLanguage] = useState<SyntaxLanguage>('plaintext');
+  const [expirationSeconds, setExpirationSeconds] = useState<number>(300); // 1m (60s) to 5m (300s)
+  const [isEncrypted, setIsEncrypted] = useState<boolean>(false);
   const [password, setPassword] = useState('');
   const [burnAfterRead, setBurnAfterRead] = useState(false);
-  const [allowDownload, setAllowDownload] = useState(true);
+  const allowDownload = true;
   const [customAlias, setCustomAlias] = useState('');
+  const [previewMode, setPreviewMode] = useState<boolean>(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Compute byte size
-  const textBytes = new TextEncoder().encode(content).length;
+  // Check for forked content on load
+  useEffect(() => {
+    try {
+      const forked = sessionStorage.getItem('blinkshare_fork_content');
+      const forkedTitle = sessionStorage.getItem('blinkshare_fork_title');
+      const forkedFormat = sessionStorage.getItem('blinkshare_fork_format');
+      if (forked) {
+        setContent(forked);
+        if (forkedTitle) setTitle(`Fork of ${forkedTitle}`);
+        if (forkedFormat) setFormat(forkedFormat as TextFormat);
+        sessionStorage.removeItem('blinkshare_fork_content');
+        sessionStorage.removeItem('blinkshare_fork_title');
+        sessionStorage.removeItem('blinkshare_fork_format');
+      }
+    } catch {}
+  }, []);
+
+  // Compute text statistics
+  const textBytes = useMemo(() => new TextEncoder().encode(content).length, [content]);
   const maxBytes = planLimits.maxTextBytes;
   const isOverLimit = textBytes > maxBytes;
   const percentUsed = Math.min(100, Math.round((textBytes / maxBytes) * 100));
+
+  const stats = useMemo(() => {
+    const chars = content.length;
+    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+    const lines = content ? content.split('\n').length : 0;
+    const readingTimeMins = Math.max(1, Math.ceil(words / 200));
+    return { chars, words, lines, readingTimeMins };
+  }, [content]);
+
+  // Markdown live preview render
+  const renderedMarkdown = useMemo(() => {
+    if (format !== 'markdown' || !content) return '';
+    const rawHtml = marked.parse(content, { async: false }) as string;
+    return DOMPurify.sanitize(rawHtml);
+  }, [format, content]);
+
+  // Auto-detect code language on paste
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+
+    // If format is source_code and language is plaintext, perform quick auto-detection
+    if (format === 'source_code' && language === 'plaintext') {
+      if (val.includes('import ') || val.includes('export ') || val.includes('const ') || val.includes('function ')) {
+        setLanguage('typescript');
+      } else if (val.includes('def ') || val.includes('print(') || val.includes('import sys')) {
+        setLanguage('python');
+      } else if (val.startsWith('{') || val.startsWith('[')) {
+        try {
+          JSON.parse(val);
+          setLanguage('json');
+        } catch {}
+      } else if (val.includes('SELECT ') || val.includes('INSERT INTO') || val.includes('CREATE TABLE')) {
+        setLanguage('sql');
+      } else if (val.includes('<!DOCTYPE') || val.includes('<html')) {
+        setLanguage('html');
+      }
+    }
+  };
 
   const handleCopyContent = async () => {
     if (!content) return;
@@ -74,7 +139,7 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
     }
 
     if (isOverLimit) {
-      setError(`Content exceeds plan limit (${Math.round(maxBytes / 1024)} KB)`);
+      setError(`Content exceeds limit (${Math.round(maxBytes / 1024)} KB)`);
       return;
     }
 
@@ -82,16 +147,33 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
     setError(null);
 
     try {
+      let finalContent = content;
+      let e2eeKey: string | null = null;
+
+      // Handle Client-Side Zero-Knowledge End-to-End Encryption
+      if (isEncrypted) {
+        const { cipherText, keyB64 } = await encryptText(content);
+        finalContent = cipherText;
+        e2eeKey = keyB64;
+      }
+
       const result = await api.createTextShare({
         title: title.trim() || undefined,
-        textContent: content,
+        textContent: finalContent,
         textFormat: format,
         syntaxLanguage: format === 'source_code' ? language : undefined,
         password: password ? password : undefined,
         burnAfterRead,
         allowDownload,
         customAlias: customAlias.trim() || undefined,
+        expirationSeconds,
+        isEncrypted,
       });
+
+      // If E2EE enabled, append decryption key to URL hash so server never sees it
+      if (isEncrypted && e2eeKey) {
+        result.shareUrl = `${result.shareUrl}#key=${e2eeKey}`;
+      }
 
       onSuccess(result);
     } catch (err: any) {
@@ -109,7 +191,7 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Untitled note (optional)"
+          placeholder="Untitled share (optional)"
           maxLength={100}
           className="w-full text-base font-medium px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white focus:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-white transition-all placeholder:text-zinc-500"
         />
@@ -121,7 +203,7 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           <button
             type="button"
             onClick={() => setFormat('plain_text')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               format === 'plain_text'
                 ? 'bg-white text-black shadow-sm'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
@@ -134,20 +216,19 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           <button
             type="button"
             onClick={() => setFormat('markdown')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               format === 'markdown'
                 ? 'bg-white text-black shadow-sm'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
             <span>Markdown</span>
           </button>
 
           <button
             type="button"
             onClick={() => setFormat('source_code')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               format === 'source_code'
                 ? 'bg-white text-black shadow-sm'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
@@ -160,7 +241,7 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           <button
             type="button"
             onClick={() => setFormat('json')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               format === 'json'
                 ? 'bg-white text-black shadow-sm'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
@@ -172,7 +253,7 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           <button
             type="button"
             onClick={() => setFormat('logs')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               format === 'logs'
                 ? 'bg-white text-black shadow-sm'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
@@ -182,6 +263,32 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           </button>
         </div>
 
+        {/* Markdown Live Preview Switcher */}
+        {format === 'markdown' && (
+          <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setPreviewMode(false)}
+              className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 cursor-pointer ${
+                !previewMode ? 'bg-white text-black font-bold' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <Edit3 className="w-3 h-3" />
+              <span>Edit</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewMode(true)}
+              className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 cursor-pointer ${
+                previewMode ? 'bg-white text-black font-bold' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <Eye className="w-3 h-3" />
+              <span>Preview</span>
+            </button>
+          </div>
+        )}
+
         {/* Language dropdown when Code format selected */}
         {format === 'source_code' && (
           <div className="flex items-center gap-1.5">
@@ -189,7 +296,7 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as SyntaxLanguage)}
-              className="text-xs bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:ring-1 focus:ring-white font-medium"
+              className="text-xs bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:ring-1 focus:ring-white font-medium cursor-pointer"
             >
               <option value="javascript">JavaScript</option>
               <option value="typescript">TypeScript</option>
@@ -212,60 +319,105 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
       {/* Sensitive text detection banner */}
       <SensitiveTextAlert text={content} />
 
-      {/* Large Multiline Text Editor */}
+      {/* Editor Surface or Markdown Live Preview */}
       <div className="relative">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Paste or type your notes, snippets, or text here... It disappears in 5 minutes."
-          rows={12}
-          className={`w-full p-4 text-sm bg-zinc-900 border rounded-2xl focus:outline-none focus:ring-1 focus:ring-white text-white font-mono leading-relaxed transition-all resize-y ${
-            isOverLimit ? 'border-rose-500 focus:ring-rose-500' : 'border-zinc-800'
-          }`}
-        />
+        {format === 'markdown' && previewMode ? (
+          <div className="w-full min-h-[280px] max-h-[500px] overflow-auto p-4 bg-zinc-900 rounded-2xl border border-zinc-800 text-zinc-100">
+            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2 font-mono flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              <span>Markdown Live Preview</span>
+            </div>
+            {content.trim() ? (
+              <div
+                className="prose prose-invert max-w-none text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: renderedMarkdown }}
+              />
+            ) : (
+              <p className="text-xs text-zinc-500 italic">Nothing to preview yet. Switch back to Edit to add text.</p>
+            )}
+          </div>
+        ) : (
+          <textarea
+            value={content}
+            onChange={handleContentChange}
+            placeholder="Paste or type your notes, snippets, or confidential text here..."
+            rows={11}
+            className={`w-full p-4 text-sm bg-zinc-900 border rounded-2xl focus:outline-none focus:ring-1 focus:ring-white text-white font-mono leading-relaxed transition-all resize-y ${
+              isOverLimit ? 'border-rose-500 focus:ring-rose-500' : 'border-zinc-800'
+            }`}
+          />
+        )}
 
         {/* Quick action floating buttons on editor */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-zinc-950/90 backdrop-blur-sm p-1 rounded-lg border border-zinc-800 shadow-sm">
-          <button
-            type="button"
-            onClick={handleCopyContent}
-            title="Copy content to clipboard"
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-          </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            title="Clear text"
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+        {!previewMode && (
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-zinc-950/90 backdrop-blur-sm p-1 rounded-lg border border-zinc-800 shadow-sm">
+            <button
+              type="button"
+              onClick={handleCopyContent}
+              title="Copy content to clipboard"
+              className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              type="button"
+              onClick={handleClear}
+              title="Clear text"
+              className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Live Text Analytics & Stats Bar */}
+      <div className="flex flex-wrap items-center justify-between text-xs text-zinc-400 px-1 gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <span>{stats.words.toLocaleString()} words</span>
+          <span>•</span>
+          <span>{stats.chars.toLocaleString()} characters</span>
+          <span>•</span>
+          <span>{stats.lines} lines</span>
+          <span>•</span>
+          <span>~{stats.readingTimeMins} min read</span>
+          <span>•</span>
+          <span>{(textBytes / 1024).toFixed(1)} KB</span>
+        </div>
+
+        <div className="text-[11px] text-zinc-400">
+          Capacity: <span className="font-semibold text-white">{percentUsed}%</span> used
         </div>
       </div>
 
-      {/* Stats bar: Characters, Bytes, Quota usage */}
-      <div className="flex flex-wrap items-center justify-between text-xs text-zinc-400 px-1">
-        <div className="flex items-center gap-4">
-          <span>{content.length.toLocaleString()} characters</span>
-          <span>
-            {textBytes < 1024
-              ? `${textBytes} bytes`
-              : `${(textBytes / 1024).toFixed(1)} KB`}
-          </span>
-          <span className={isOverLimit ? 'text-rose-400 font-semibold' : 'text-zinc-500'}>
-            Plan limit: {Math.round(maxBytes / 1024)} KB ({percentUsed}% used)
-          </span>
-        </div>
+      {/* Configurable Expiration Selector (1 to 5 Minutes) */}
+      <ExpirationSelector
+        value={expirationSeconds}
+        onChange={setExpirationSeconds}
+      />
 
-        <div className="flex items-center gap-1 text-[11px] text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800 font-medium">
-          <span>Fixed 5-min link lifetime</span>
-        </div>
-      </div>
-
-      {/* Advanced Options Accordion / Controls (Password, Burn, Download, Custom Alias) */}
+      {/* Advanced Privacy & Security Controls */}
       <div className="pt-2 border-t border-zinc-800 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Zero-Knowledge E2EE Toggle */}
+        <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl">
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <KeyRound className="w-3.5 h-3.5 text-white" />
+            <span>Zero-Knowledge E2EE</span>
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
+              Free
+            </span>
+          </label>
+          <label className="flex items-center gap-2 mt-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isEncrypted}
+              onChange={(e) => setIsEncrypted(e.target.checked)}
+              className="rounded accent-white text-black"
+            />
+            <span className="text-xs text-zinc-400">Client-Side AES-256</span>
+          </label>
+        </div>
+
         {/* Password Lock */}
         <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl">
           <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
@@ -301,26 +453,6 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
               className="rounded accent-white text-black"
             />
             <span className="text-xs text-zinc-400">Delete upon 1st view</span>
-          </label>
-        </div>
-
-        {/* Restrict Download */}
-        <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl">
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
-            <Download className="w-3.5 h-3.5 text-white" />
-            <span>Allow Download</span>
-            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
-              Free
-            </span>
-          </label>
-          <label className="flex items-center gap-2 mt-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allowDownload}
-              onChange={(e) => setAllowDownload(e.target.checked)}
-              className="rounded accent-white text-black"
-            />
-            <span className="text-xs text-zinc-400">Enable download button</span>
           </label>
         </div>
 
@@ -362,12 +494,12 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           {submitting ? (
             <>
               <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-              <span>Generating Secure 5-Minute Link...</span>
+              <span>Securing & Creating Link...</span>
             </>
           ) : (
             <>
               <Sparkles className="w-5 h-5 text-black" />
-              <span>Create Share Link</span>
+              <span>Create {Math.floor(expirationSeconds / 60)}-Minute Share Link</span>
             </>
           )}
         </button>

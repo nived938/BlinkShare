@@ -167,8 +167,8 @@ export const TextViewerPage: React.FC = () => {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
-          <p className="text-sm font-medium text-slate-600">Loading shared text...</p>
+          <div className="w-8 h-8 border-3 border-zinc-700 border-t-white rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-zinc-400">Loading shared text...</p>
         </div>
       </div>
     );
@@ -180,25 +180,25 @@ export const TextViewerPage: React.FC = () => {
 
   if (errorType === 'error') {
     return (
-      <div className="max-w-md mx-auto my-16 p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
-        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+      <div className="max-w-md mx-auto my-16 p-8 text-center bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl text-white">
+        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-900 border border-zinc-800 text-white flex items-center justify-center">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h3 className="text-xl font-bold text-slate-900 mb-2">Unable to load this share. Please try again.</h3>
-        <p className="text-xs text-slate-500 mb-6">{errorMessage || 'A network or server error occurred while retrieving this share.'}</p>
+        <h3 className="text-xl font-bold text-white mb-2">Unable to load this share. Please try again.</h3>
+        <p className="text-xs text-zinc-400 mb-6">{errorMessage || 'A network or server error occurred while retrieving this share.'}</p>
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={() => fetchContent()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5 text-black" />
             <span>Try Again</span>
           </button>
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3.5 h-3.5 text-black" />
             <span>Return to Homepage</span>
           </Link>
         </div>
@@ -208,17 +208,17 @@ export const TextViewerPage: React.FC = () => {
 
   if (errorType === 'not_found' || !shareData) {
     return (
-      <div className="max-w-md mx-auto my-16 p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
-        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+      <div className="max-w-md mx-auto my-16 p-8 text-center bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl text-white">
+        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-900 border border-zinc-800 text-white flex items-center justify-center">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h3 className="text-xl font-bold text-slate-900 mb-2">This share could not be found.</h3>
-        <p className="text-xs text-slate-500 mb-6">The requested link does not exist, was mistyped, or has already been removed.</p>
+        <h3 className="text-xl font-bold text-white mb-2">This share could not be found.</h3>
+        <p className="text-xs text-zinc-400 mb-6">The requested link does not exist, was mistyped, or has already been removed.</p>
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors"
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="w-3.5 h-3.5 text-black" />
           <span>Return to Homepage</span>
         </Link>
       </div>
@@ -228,12 +228,12 @@ export const TextViewerPage: React.FC = () => {
   // Password Unlock Screen
   if (shareData.isPasswordRequired) {
     return (
-      <div className="max-w-md mx-auto my-16 p-8 bg-white rounded-3xl border border-slate-200 shadow-xl shadow-brand-500/5 text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center border border-brand-200">
-          <Lock className="w-7 h-7" />
+      <div className="max-w-md mx-auto my-16 p-8 bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl text-center text-white">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-zinc-900 text-white flex items-center justify-center border border-zinc-800">
+          <Lock className="w-7 h-7 text-white" />
         </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-1">Password Protected Share</h2>
-        <p className="text-xs text-slate-500 mb-6">
+        <h2 className="text-xl font-bold text-white mb-1">Password Protected Share</h2>
+        <p className="text-xs text-zinc-400 mb-6">
           This share was locked by its creator with a password.
         </p>
 
@@ -244,11 +244,11 @@ export const TextViewerPage: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter password to unlock"
             autoFocus
-            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white placeholder-zinc-500"
           />
 
           {passwordError && (
-            <p className="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
+            <p className="text-xs text-white bg-zinc-900 p-2.5 rounded-lg border border-zinc-700">
               {passwordError}
             </p>
           )}
@@ -256,13 +256,13 @@ export const TextViewerPage: React.FC = () => {
           <button
             type="submit"
             disabled={unlocking || !password}
-            className="w-full py-2.5 rounded-xl font-semibold text-sm text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 transition-colors"
+            className="w-full py-2.5 rounded-xl font-bold text-sm text-black bg-white hover:bg-zinc-200 disabled:opacity-40 transition-colors shadow-sm cursor-pointer"
           >
             {unlocking ? 'Verifying...' : 'Unlock Content'}
           </button>
         </form>
 
-        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center">
+        <div className="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-center">
           <CountdownTimer
             expiresAt={shareData.metadata.expiresAt}
             onExpired={() => setIsExpired(true)}
@@ -273,22 +273,22 @@ export const TextViewerPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 text-white">
       {/* Top Bar with Title, Expiry & Actions */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <div className="bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-200">
+              <span className="text-xs font-bold uppercase tracking-wider text-black bg-white px-2 py-0.5 rounded-md">
                 {shareData.metadata.textFormat?.replace('_', ' ')}
               </span>
               {shareData.metadata.syntaxLanguage && shareData.metadata.syntaxLanguage !== 'plaintext' && (
-                <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                <span className="text-xs font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md">
                   {shareData.metadata.syntaxLanguage}
                 </span>
               )}
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               {shareData.metadata.title || 'Untitled Share'}
             </h1>
           </div>
@@ -303,8 +303,8 @@ export const TextViewerPage: React.FC = () => {
 
         {/* Burn notice if applicable */}
         {shareData.isBurned && (
-          <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-            <Flame className="w-4 h-4 text-rose-600 flex-shrink-0" />
+          <div className="mt-4 p-3 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs flex items-center gap-2">
+            <Flame className="w-4 h-4 text-white flex-shrink-0" />
             <span>
               <strong>Burn-after-first-view triggered:</strong> This share has already been destroyed on the server and cannot be viewed again.
             </span>
@@ -316,18 +316,18 @@ export const TextViewerPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-black" /> : <Copy className="w-3.5 h-3.5 text-black" />}
               <span>{copied ? 'Copied' : 'Copy Content'}</span>
             </button>
 
             {shareData.metadata.allowDownload && (
               <button
                 onClick={handleDownload}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-colors shadow-sm cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3.5 h-3.5 text-black" />
                 <span>Download File</span>
               </button>
             )}
@@ -335,7 +335,7 @@ export const TextViewerPage: React.FC = () => {
 
           <button
             onClick={() => setShowReportDialog(true)}
-            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-rose-600 transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
           >
             <Flag className="w-3.5 h-3.5" />
             <span>Report Abuse</span>
@@ -344,25 +344,25 @@ export const TextViewerPage: React.FC = () => {
       </div>
 
       {/* Main Content Viewer Surface */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 overflow-hidden">
+      <div className="bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl p-6 sm:p-8 overflow-hidden">
         {shareData.metadata.textFormat === 'markdown' ? (
           <div
-            className="prose prose-slate max-w-none text-sm leading-relaxed"
+            className="prose prose-invert max-w-none text-sm leading-relaxed"
             dangerouslySetInnerHTML={{ __html: renderedMarkdown }}
           />
         ) : shareData.metadata.textFormat === 'source_code' ? (
-          <pre className="overflow-x-auto rounded-2xl bg-slate-50 p-4 border border-slate-200 font-mono text-xs sm:text-sm">
+          <pre className="overflow-x-auto rounded-2xl bg-zinc-900 p-4 border border-zinc-800 font-mono text-xs sm:text-sm">
             <code dangerouslySetInnerHTML={{ __html: highlightedCode }} />
           </pre>
         ) : (
-          <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm text-slate-800 leading-relaxed break-words bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+          <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm text-zinc-100 leading-relaxed break-words bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
             {shareData.textContent}
           </pre>
         )}
       </div>
 
       {/* Expiration disclaimer */}
-      <div className="text-center text-xs text-slate-400 mt-6 flex items-center justify-center gap-1.5">
+      <div className="text-center text-xs text-zinc-400 mt-6 flex items-center justify-center gap-1.5">
         <Clock className="w-3.5 h-3.5" />
         <span>This shared text is automatically deleted from Cloudflare storage after 5 minutes.</span>
       </div>

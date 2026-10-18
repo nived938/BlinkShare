@@ -9,29 +9,29 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed', // electric violet
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
+          50: '#18181b',
+          100: '#27272a',
+          200: '#3f3f46',
+          300: '#52525b',
+          400: '#71717a',
+          500: '#a1a1aa',
+          600: '#ffffff',
+          700: '#f4f4f5',
+          800: '#e4e4e7',
+          900: '#ffffff',
         },
         electric: {
-          blue: '#2563eb',
-          cyan: '#06b6d4',
-          violet: '#7c3aed',
+          blue: '#ffffff',
+          cyan: '#e4e4e7',
+          violet: '#ffffff',
         },
         charcoal: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
+          50: '#09090b',
+          100: '#18181b',
+          200: '#27272a',
+          700: '#71717a',
+          800: '#a1a1aa',
+          900: '#ffffff',
         }
       },
       fontFamily: {

@@ -45,10 +45,10 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
     <div
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-semibold transition-colors ${
         isExpired
-          ? 'bg-rose-100 text-rose-700 border border-rose-200'
+          ? 'bg-zinc-900 text-zinc-500 border border-zinc-800'
           : isUrgent
-          ? 'bg-amber-100 text-amber-800 border border-amber-300 animate-pulse'
-          : 'bg-brand-50 text-brand-700 border border-brand-200'
+          ? 'bg-white text-black font-bold border border-white animate-pulse'
+          : 'bg-zinc-900 text-white border border-zinc-700'
       } ${className}`}
       title="Server-enforced expiration countdown"
     >

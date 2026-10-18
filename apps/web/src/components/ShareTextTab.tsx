@@ -111,20 +111,20 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Untitled note (optional)"
           maxLength={100}
-          className="w-full text-base font-medium px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all placeholder:text-slate-400"
+          className="w-full text-base font-medium px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white focus:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-white transition-all placeholder:text-zinc-500"
         />
       </div>
 
       {/* Format & Language Selector Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-slate-100/70 rounded-xl border border-slate-200">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-zinc-900/60 rounded-xl border border-zinc-800">
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setFormat('plain_text')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               format === 'plain_text'
-                ? 'bg-white text-brand-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -136,8 +136,8 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
             onClick={() => setFormat('markdown')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               format === 'markdown'
-                ? 'bg-white text-brand-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -149,8 +149,8 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
             onClick={() => setFormat('source_code')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               format === 'source_code'
-                ? 'bg-white text-brand-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
             <Code className="w-3.5 h-3.5" />
@@ -162,8 +162,8 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
             onClick={() => setFormat('json')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               format === 'json'
-                ? 'bg-white text-brand-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
             <span>JSON</span>
@@ -174,8 +174,8 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
             onClick={() => setFormat('logs')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               format === 'logs'
-                ? 'bg-white text-brand-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
             <span>Logs</span>
@@ -185,11 +185,11 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
         {/* Language dropdown when Code format selected */}
         {format === 'source_code' && (
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-slate-500 font-medium">Language:</span>
+            <span className="text-xs text-zinc-400 font-medium">Language:</span>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as SyntaxLanguage)}
-              className="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 font-medium"
+              className="text-xs bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:ring-1 focus:ring-white font-medium"
             >
               <option value="javascript">JavaScript</option>
               <option value="typescript">TypeScript</option>
@@ -219,26 +219,26 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
           onChange={(e) => setContent(e.target.value)}
           placeholder="Paste or type your notes, snippets, or text here... It disappears in 5 minutes."
           rows={12}
-          className={`w-full p-4 text-sm bg-white border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 shadow-inner font-mono leading-relaxed transition-all resize-y ${
-            isOverLimit ? 'border-rose-400 focus:ring-rose-400' : 'border-slate-300'
+          className={`w-full p-4 text-sm bg-zinc-900 border rounded-2xl focus:outline-none focus:ring-1 focus:ring-white text-white font-mono leading-relaxed transition-all resize-y ${
+            isOverLimit ? 'border-rose-500 focus:ring-rose-500' : 'border-zinc-800'
           }`}
         />
 
         {/* Quick action floating buttons on editor */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-slate-200/80 shadow-sm">
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-zinc-950/90 backdrop-blur-sm p-1 rounded-lg border border-zinc-800 shadow-sm">
           <button
             type="button"
             onClick={handleCopyContent}
             title="Copy content to clipboard"
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
           <button
             type="button"
             onClick={handleClear}
             title="Clear text"
-            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -246,7 +246,7 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
       </div>
 
       {/* Stats bar: Characters, Bytes, Quota usage */}
-      <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1">
+      <div className="flex flex-wrap items-center justify-between text-xs text-zinc-400 px-1">
         <div className="flex items-center gap-4">
           <span>{content.length.toLocaleString()} characters</span>
           <span>
@@ -254,25 +254,24 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
               ? `${textBytes} bytes`
               : `${(textBytes / 1024).toFixed(1)} KB`}
           </span>
-          <span className={isOverLimit ? 'text-rose-600 font-semibold' : 'text-slate-400'}>
+          <span className={isOverLimit ? 'text-rose-400 font-semibold' : 'text-zinc-500'}>
             Plan limit: {Math.round(maxBytes / 1024)} KB ({percentUsed}% used)
           </span>
         </div>
 
-        <div className="flex items-center gap-1 text-[11px] text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full border border-brand-200/60 font-medium">
+        <div className="flex items-center gap-1 text-[11px] text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800 font-medium">
           <span>Fixed 5-min link lifetime</span>
         </div>
       </div>
 
       {/* Advanced Options Accordion / Controls (Password, Burn, Download, Custom Alias) */}
-      <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Password Protection */}
+      <div className="pt-2 border-t border-zinc-800 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Password Lock */}
-        <div className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl">
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <Lock className="w-3.5 h-3.5 text-brand-600" />
+        <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl">
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <Lock className="w-3.5 h-3.5 text-white" />
             <span>Password Lock</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
               Free
             </span>
           </label>
@@ -281,16 +280,16 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Set optional password"
-            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full text-xs px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-white placeholder-zinc-500"
           />
         </div>
 
         {/* Burn After First View */}
-        <div className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl">
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <Flame className="w-3.5 h-3.5 text-rose-500" />
+        <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl">
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <Flame className="w-3.5 h-3.5 text-white" />
             <span>Burn on View</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
               Free
             </span>
           </label>
@@ -299,18 +298,18 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
               type="checkbox"
               checked={burnAfterRead}
               onChange={(e) => setBurnAfterRead(e.target.checked)}
-              className="rounded text-brand-600 focus:ring-brand-500"
+              className="rounded accent-white text-black"
             />
-            <span className="text-xs text-slate-600">Delete upon 1st view</span>
+            <span className="text-xs text-zinc-400">Delete upon 1st view</span>
           </label>
         </div>
 
         {/* Restrict Download */}
-        <div className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl">
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <Download className="w-3.5 h-3.5 text-indigo-600" />
+        <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl">
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <Download className="w-3.5 h-3.5 text-white" />
             <span>Allow Download</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
               Free
             </span>
           </label>
@@ -319,18 +318,18 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
               type="checkbox"
               checked={allowDownload}
               onChange={(e) => setAllowDownload(e.target.checked)}
-              className="rounded text-brand-600 focus:ring-brand-500"
+              className="rounded accent-white text-black"
             />
-            <span className="text-xs text-slate-600">Enable download button</span>
+            <span className="text-xs text-zinc-400">Enable download button</span>
           </label>
         </div>
 
         {/* Custom Alias */}
-        <div className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl">
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <LinkIcon className="w-3.5 h-3.5 text-cyan-600" />
+        <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl">
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <LinkIcon className="w-3.5 h-3.5 text-white" />
             <span>Custom Alias</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
               Free
             </span>
           </label>
@@ -340,34 +339,34 @@ export const ShareTextTab: React.FC<ShareTextTabProps> = ({ onSuccess }) => {
             onChange={(e) => setCustomAlias(e.target.value)}
             placeholder="e.g. my-note"
             maxLength={32}
-            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+            className="w-full text-xs px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-white font-mono placeholder-zinc-500"
           />
         </div>
       </div>
 
       {/* Error Notice */}
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-700 text-white rounded-xl text-xs">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-white" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Create Share Link Button */}
+      {/* Create Share Link Button - WHITE BUTTON */}
       <div className="pt-2">
         <button
           type="submit"
           disabled={submitting || isOverLimit || !content.trim()}
-          className="w-full py-3.5 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-brand-600 via-indigo-600 to-electric-cyan hover:from-brand-700 hover:via-indigo-700 hover:to-electric-blue shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 text-base"
+          className="w-full py-3.5 px-6 rounded-2xl font-bold text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 text-base cursor-pointer"
         >
           {submitting ? (
             <>
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
               <span>Generating Secure 5-Minute Link...</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-5 h-5 text-black" />
               <span>Create Share Link</span>
             </>
           )}

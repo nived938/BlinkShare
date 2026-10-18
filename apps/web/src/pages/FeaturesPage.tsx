@@ -12,12 +12,12 @@ export const FeaturesPage: React.FC = () => {
     {
       icon: Shield,
       title: 'Cloudflare Edge Architecture',
-      desc: 'Built with Cloudflare Workers, D1, and R2. Low-latency edge execution without single-point database bottlenecks.',
+      desc: 'Built with Cloudflare Workers, D1, and Workers KV. Low-latency edge execution without single-point database bottlenecks.',
     },
     {
       icon: Image,
       title: 'Secure Image Streaming',
-      desc: 'Images are stored in private Cloudflare R2 buckets and delivered via streaming Worker responses. No direct or permanent R2 links.',
+      desc: 'Images are stored as raw binary in Cloudflare Workers KV and delivered via streaming Worker responses. No public URLs.',
     },
     {
       icon: FileCode2,
@@ -47,21 +47,21 @@ export const FeaturesPage: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-white">
       <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 border border-brand-200 text-xs font-semibold text-brand-700">
-          <Zap className="w-3.5 h-3.5 text-brand-600" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300">
+          <Zap className="w-3.5 h-3.5 text-white" />
           <span>Engineered for Ephemeral Privacy</span>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
           Everything you need.{' '}
-          <span className="bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">
+          <span className="text-zinc-400 block sm:inline">
             Nothing you leave behind.
           </span>
         </h1>
 
-        <p className="text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
+        <p className="text-base text-zinc-400 leading-relaxed max-w-2xl mx-auto">
           Combining the best features of text snippet tools and modern image dropboxes into one edge-native platform.
         </p>
       </div>
@@ -72,28 +72,28 @@ export const FeaturesPage: React.FC = () => {
           return (
             <div
               key={i}
-              className="p-6 bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition-all hover:-translate-y-1"
+              className="p-6 bg-zinc-950 rounded-3xl border border-zinc-800 shadow-sm hover:border-zinc-700 transition-all hover:-translate-y-1"
             >
-              <div className="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-200/60 text-brand-600 flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 text-white flex items-center justify-center mb-4">
                 <Icon className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base mb-2">{feat.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{feat.desc}</p>
+              <h3 className="font-bold text-white text-base mb-2">{feat.title}</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">{feat.desc}</p>
             </div>
           );
         })}
       </div>
 
-      <div className="p-8 sm:p-12 bg-gradient-to-r from-brand-600 via-indigo-600 to-electric-cyan rounded-3xl text-white text-center shadow-xl">
+      <div className="p-8 sm:p-12 bg-zinc-950 border border-zinc-800 rounded-3xl text-white text-center shadow-2xl">
         <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">Ready to share without the clutter?</h2>
-        <p className="text-sm text-white/90 max-w-xl mx-auto mb-8">
+        <p className="text-sm text-zinc-400 max-w-xl mx-auto mb-8">
           No sign up required for basic sharing. Open the homepage, paste your text or drop your screenshot, and get a link.
         </p>
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-brand-700 font-bold text-sm shadow-md hover:bg-slate-50 transition-transform hover:scale-105"
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-white text-black font-bold text-sm shadow-md hover:bg-zinc-200 transition-transform hover:scale-105 cursor-pointer"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-4 h-4 text-black" />
           <span>Create a 5-Minute Share</span>
         </Link>
       </div>

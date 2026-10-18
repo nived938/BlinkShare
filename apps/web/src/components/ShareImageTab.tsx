@@ -181,7 +181,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
         customAlias: customAlias.trim() || undefined,
       });
 
-      // Step 2: Upload binary stream directly to R2 upload endpoint
+      // Step 2: Upload binary stream directly to upload endpoint
       await api.uploadImageBinary(
         initResult.uploadUrl,
         selectedFile,
@@ -205,12 +205,12 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
     <div className="space-y-6">
       {/* Storage Mode Notice Banners */}
       {storageInfo && !storageInfo.storageAvailable && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 flex items-start gap-3 text-amber-900 shadow-2xs">
-          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/90 p-4 flex items-start gap-3 text-zinc-300 shadow-2xs">
+          <AlertCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
-            <p className="font-semibold text-amber-900">Workers KV Binding Not Detected</p>
-            <p className="text-amber-800 leading-relaxed">
-              Cloudflare Workers KV (<code className="bg-amber-100 px-1 py-0.5 rounded font-mono">IMAGE_STORE</code>) is not bound.
+            <p className="font-semibold text-white">Workers KV Binding Not Detected</p>
+            <p className="text-zinc-400 leading-relaxed">
+              Cloudflare Workers KV (<code className="bg-zinc-800 px-1 py-0.5 rounded font-mono text-zinc-200">IMAGE_STORE</code>) is not bound.
               <strong> Text sharing remains 100% functional.</strong>
             </p>
           </div>
@@ -218,11 +218,11 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
       )}
 
       {storageInfo?.storageAvailable && (
-        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-zinc-200 text-xs shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0"></span>
           <div>
-            <span className="font-semibold text-emerald-800">100% Free Edge Storage Active: </span>
-            <span className="text-emerald-700">Images stored in Cloudflare Workers KV (up to 5 MB per image, deleted after 5 min). Zero billing required.</span>
+            <span className="font-semibold text-white">100% Free Edge Storage Active: </span>
+            <span className="text-zinc-400">Images stored in Cloudflare Workers KV (up to 5 MB per image, deleted after 5 min). Zero billing required.</span>
           </div>
         </div>
       )}
@@ -253,38 +253,38 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
           }}
           className={`border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center transition-all ${
             storageInfo?.storageAvailable === false
-              ? 'border-slate-200 bg-slate-50/60 opacity-60 cursor-not-allowed'
+              ? 'border-zinc-800 bg-zinc-950/60 opacity-60 cursor-not-allowed'
               : isDragging
-              ? 'border-brand-500 bg-brand-50/70 scale-[1.01] cursor-pointer'
-              : 'border-slate-300 hover:border-brand-400 bg-slate-50/50 hover:bg-slate-50 cursor-pointer'
+              ? 'border-white bg-zinc-900 scale-[1.01] cursor-pointer'
+              : 'border-zinc-800 hover:border-zinc-600 bg-zinc-950 hover:bg-zinc-900/40 cursor-pointer'
           }`}
         >
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-brand-100 to-indigo-100 flex items-center justify-center text-brand-600 shadow-sm border border-brand-200/50">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-900 flex items-center justify-center text-white shadow-sm border border-zinc-800">
             <UploadCloud className="w-8 h-8" />
           </div>
 
-          <h3 className="text-lg font-bold text-slate-900 mb-1">
-            Drag & drop your image here, or <span className="text-brand-600 underline">browse</span>
+          <h3 className="text-lg font-bold text-white mb-1">
+            Drag & drop your image here, or <span className="text-zinc-300 underline">browse</span>
           </h3>
-          <p className="text-xs text-slate-500 mb-4 max-w-sm mx-auto">
-            Or simply press <kbd className="font-mono bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-700 shadow-2xs">Ctrl+V</kbd> / <kbd className="font-mono bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-700 shadow-2xs">Cmd+V</kbd> anywhere to paste a screenshot directly.
+          <p className="text-xs text-zinc-400 mb-4 max-w-sm mx-auto">
+            Or simply press <kbd className="font-mono bg-zinc-900 border border-zinc-700 px-1.5 py-0.5 rounded text-zinc-200 shadow-2xs">Ctrl+V</kbd> / <kbd className="font-mono bg-zinc-900 border border-zinc-700 px-1.5 py-0.5 rounded text-zinc-200 shadow-2xs">Cmd+V</kbd> anywhere to paste a screenshot directly.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-[11px] text-slate-400">
-            <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-full font-medium">JPEG</span>
-            <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-full font-medium">PNG</span>
-            <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-full font-medium">WebP</span>
-            <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-full font-medium">GIF</span>
-            <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-full font-medium">AVIF</span>
-            <span className="text-slate-400">• Up to {Math.round(planLimits.maxImageBytes / (1024 * 1024))} MB</span>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-[11px] text-zinc-500">
+            <span className="bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full font-medium text-zinc-300">JPEG</span>
+            <span className="bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full font-medium text-zinc-300">PNG</span>
+            <span className="bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full font-medium text-zinc-300">WebP</span>
+            <span className="bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full font-medium text-zinc-300">GIF</span>
+            <span className="bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full font-medium text-zinc-300">AVIF</span>
+            <span className="text-zinc-500">• Up to {Math.round(planLimits.maxImageBytes / (1024 * 1024))} MB</span>
           </div>
         </div>
       ) : (
         /* Image Selected State */
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+        <div className="bg-zinc-950 rounded-3xl border border-zinc-800 p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             {/* Thumbnail Preview */}
-            <div className="relative group w-full sm:w-48 h-48 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0">
+            <div className="relative group w-full sm:w-48 h-48 rounded-2xl overflow-hidden bg-black border border-zinc-800 flex items-center justify-center flex-shrink-0">
               {previewUrl && (
                 <img
                   src={previewUrl}
@@ -296,7 +296,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
                 <button
                   type="button"
                   onClick={handleRemove}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/70 hover:bg-rose-600 text-white transition-colors"
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-zinc-900/80 hover:bg-white hover:text-black text-white transition-colors"
                   title="Remove image"
                 >
                   <X className="w-4 h-4" />
@@ -308,19 +308,19 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
             <div className="flex-1 space-y-3 w-full">
               <div>
                 <div className="flex items-center gap-2">
-                  <FileCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                  <h4 className="text-base font-bold text-slate-900 truncate" title={selectedFile.name}>
+                  <FileCheck className="w-4 h-4 text-white flex-shrink-0" />
+                  <h4 className="text-base font-bold text-white truncate" title={selectedFile.name}>
                     {selectedFile.name}
                   </h4>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400 mt-1">
                   <span>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
                   {imageDimensions && (
                     <span>
                       {imageDimensions.width} × {imageDimensions.height} px
                     </span>
                   )}
-                  <span className="uppercase bg-slate-100 px-2 py-0.5 rounded font-mono text-[10px]">
+                  <span className="uppercase bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded font-mono text-[10px] text-zinc-300">
                     {selectedFile.type.split('/')[1] || 'image'}
                   </span>
                 </div>
@@ -330,12 +330,12 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
               {isUploading && (
                 <div className="space-y-1.5 pt-2">
                   <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-brand-700">Uploading to Edge Storage...</span>
-                    <span className="text-slate-600">{uploadProgress}%</span>
+                    <span className="text-zinc-300">Uploading to Workers KV Storage...</span>
+                    <span className="text-white">{uploadProgress}%</span>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                  <div className="w-full h-2.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
                     <div
-                      className="h-full bg-gradient-to-r from-brand-600 to-electric-cyan transition-all duration-300"
+                      className="h-full bg-white transition-all duration-300"
                       style={{ width: `${uploadProgress}%` }}
                     ></div>
                   </div>
@@ -343,7 +343,7 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
                     <button
                       type="button"
                       onClick={handleRemove}
-                      className="text-xs text-rose-600 hover:underline"
+                      className="text-xs text-zinc-400 hover:text-white hover:underline"
                     >
                       Cancel Upload
                     </button>
@@ -351,15 +351,15 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
                 </div>
               )}
 
-              {/* Replace image button */}
+              {/* Replace image button - WHITE BUTTON */}
               {!isUploading && (
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors inline-flex items-center gap-1.5"
+                    className="text-xs font-semibold text-black bg-white hover:bg-zinc-200 px-3.5 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <RefreshCw className="w-3.5 h-3.5 text-black" />
                     <span>Choose Different Image</span>
                   </button>
                 </div>
@@ -370,13 +370,13 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
       )}
 
       {/* Advanced Options Bar (Password, Burn, Download, Custom Alias) */}
-      <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Password */}
         <div>
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <Lock className="w-3.5 h-3.5 text-brand-600" />
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <Lock className="w-3.5 h-3.5 text-white" />
             <span>Password Protection</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
               Free
             </span>
           </label>
@@ -385,16 +385,16 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Set optional password"
-            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full text-xs px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-white placeholder-zinc-500"
           />
         </div>
 
         {/* Burn after read */}
         <div>
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <Flame className="w-3.5 h-3.5 text-rose-500" />
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <Flame className="w-3.5 h-3.5 text-white" />
             <span>Burn on View</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
               Free
             </span>
           </label>
@@ -403,18 +403,18 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
               type="checkbox"
               checked={burnAfterRead}
               onChange={(e) => setBurnAfterRead(e.target.checked)}
-              className="rounded text-brand-600 focus:ring-brand-500"
+              className="rounded accent-white text-black"
             />
-            <span className="text-xs text-slate-600">Delete after 1st view</span>
+            <span className="text-xs text-zinc-400">Delete after 1st view</span>
           </label>
         </div>
 
         {/* Download restriction */}
         <div>
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <Download className="w-3.5 h-3.5 text-indigo-600" />
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <Download className="w-3.5 h-3.5 text-white" />
             <span>Allow Download</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
               Free
             </span>
           </label>
@@ -423,18 +423,18 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
               type="checkbox"
               checked={allowDownload}
               onChange={(e) => setAllowDownload(e.target.checked)}
-              className="rounded text-brand-600 focus:ring-brand-500"
+              className="rounded accent-white text-black"
             />
-            <span className="text-xs text-slate-600">Recipients can download</span>
+            <span className="text-xs text-zinc-400">Recipients can download</span>
           </label>
         </div>
 
         {/* Custom Alias */}
         <div>
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <LinkIcon className="w-3.5 h-3.5 text-cyan-600" />
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-1">
+            <LinkIcon className="w-3.5 h-3.5 text-white" />
             <span>Custom Alias</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-normal">
+            <span className="text-[10px] text-black bg-white px-1 py-0.2 rounded font-bold">
               Free
             </span>
           </label>
@@ -444,35 +444,35 @@ export const ShareImageTab: React.FC<ShareImageTabProps> = ({ onSuccess }) => {
             onChange={(e) => setCustomAlias(e.target.value)}
             placeholder="e.g. my-photo"
             maxLength={32}
-            className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+            className="w-full text-xs px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-white font-mono placeholder-zinc-500"
           />
         </div>
       </div>
 
       {/* Error Notice */}
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-700 text-white rounded-xl text-xs">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-white" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Create Image Link Button */}
+      {/* Create Image Link Button - WHITE BUTTON */}
       <div>
         <button
           type="button"
           onClick={handleUploadAndShare}
           disabled={!selectedFile || isUploading || storageInfo?.storageAvailable === false}
-          className="w-full py-3.5 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-brand-600 via-indigo-600 to-electric-cyan hover:from-brand-700 hover:via-indigo-700 hover:to-electric-blue shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 text-base"
+          className="w-full py-3.5 px-6 rounded-2xl font-bold text-black bg-white hover:bg-zinc-200 active:bg-zinc-300 shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 text-base cursor-pointer"
         >
           {isUploading ? (
             <>
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
               <span>Uploading & Securing Share...</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-5 h-5 text-black" />
               <span>Create Image Link</span>
             </>
           )}
